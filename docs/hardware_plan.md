@@ -19,10 +19,23 @@
 - 优先使用 3.3 V TTL 串口。
 - 供电链路预留足够电流余量。
 
+## 天猛星 UART 分配
+
+天猛星 MSPM0G3507 的硬件接口已冻结，完整规范见 `docs/hardware_interface.md`，应用层统一配置见 `application/config/app_config.h`。
+
+| 用途 | UART | 引脚 |
+| --- | --- | --- |
+| 调试 | UART0 | PA10 TX / PA11 RX，板载 CH340E + Type-C |
+| MaixCAM | UART1 | PA8 TX / PA9 RX |
+| X42S RS485 | UART2 | PB15 TX / PB16 RX，PB17 可做 DE/RE |
+
+UART0 只做调试日志；MaixCAM 和 X42S 分开使用 UART1/UART2，避免视觉帧和电机二进制帧互相干扰。PA10/PA11、PA8/PA9、PB15/PB16、PB17、PB21、PB22 禁止被其他模块占用。
+
 ## 纯视觉拓展板目标
 
 - 提供主控、OLED、按键、电流检测接口。
 - 提供 MaixCAM UART 接口与供电接口。
+- 预留 X42S RS485 接口：PB15、PB16、PB17、GND、5V/3V3。
 - 保留下载、调试、备用 GPIO。
 - 第一版以稳定、易焊、易改线为主。
 
@@ -31,4 +44,3 @@
 - 采用闲鱼现成拓展板降低机械和功率驱动风险。
 - 主控侧优先复用同一套 UART 协议解析和显示逻辑。
 - 电机/舵机控制与视觉数据解耦，便于先用假数据调试。
-

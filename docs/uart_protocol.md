@@ -22,9 +22,19 @@ MaixCAM RX   <- 主控 TX
 - 前期 MaixCAM 使用 Type-C 独立供电，主控独立供电，但双方必须共地。
 - 前期可用杜邦线验证；最终装置使用整体 4P/6P 线束，不使用散杜邦线作为关键连接。
 
+MSPM0G3507 天猛星固定接线：
+
+| 链路 | 主控 UART | 主控 TX | 主控 RX | 外设 |
+| --- | --- | --- | --- | --- |
+| 调试日志 | UART0 | PA10 | PA11 | 板载 CH340E / Type-C |
+| MaixCAM | UART1 | PA8 | PA9 | MaixCAM Pro |
+| X42S RS485 | UART2 | PB15 | PB16 | RS485 收发器 |
+
+MaixCAM 具体接线为 `MaixCAM TX -> PA9 / UART1 RX`，`MaixCAM RX <- PA8 / UART1 TX`。首阶段只接收视觉数据时，PA8 可先不接。UART0 只用于调试，禁止再外接 MaixCAM 或 X42S。
+
 ## 3. 串口参数
 
-| 参数 | 统一值 |
+| 参数 | MaixCAM UART1 统一值 |
 | --- | --- |
 | 波特率 | 115200 |
 | 数据位 | 8 |
@@ -32,6 +42,8 @@ MaixCAM RX   <- 主控 TX
 | 停止位 | 1 |
 | 流控 | None |
 | 编码 | ASCII |
+
+X42S RS485 使用 UART2，默认同为 `115200, 8N1`，但协议为二进制自由协议，不使用本文件的 `$...#` 帧格式；详见 `docs/x42s_rs485_analysis.md`。
 
 ## 4. 视觉数据帧 V1
 

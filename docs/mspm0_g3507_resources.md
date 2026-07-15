@@ -36,6 +36,9 @@ E:\tianmengxing
 | UART0 RX | PA11 | 板载调试/基础串口例程使用 |
 | UART1 TX | PA8 | OpenMV4 模块例程使用，可作为外部视觉串口 |
 | UART1 RX | PA9 | OpenMV4 模块例程使用，可作为外部视觉串口 |
+| UART2 TX | PB15 | 推荐接 X42S RS485 模块 DI |
+| UART2 RX | PB16 | 推荐接 X42S RS485 模块 RO |
+| RS485 DE/RE | PB17 | 普通半双工 485 模块方向控制，自动方向模块可不接 |
 | OLED I2C0 SDA | PA0 | 0.96 寸 IIC OLED 例程使用 |
 | OLED I2C0 SCL | PA1 | 0.96 寸 IIC OLED 例程使用 |
 | ADC0 CH0 | PA27 | `08_adc` 例程使用，可接电流检测模拟输出 |
@@ -54,6 +57,16 @@ E:\tianmengxing
 5. 跑 `08_adc`，把电流检测模块模拟输出接 PA27，先显示原始 ADC 和换算电压。
 6. 合并时保持三条链路互不阻塞：UART 中断收帧，主循环解析协议，OLED 定时刷新。
 
+## UART 资源规划
+
+| 用途 | UART | 引脚 | 处理 |
+| --- | --- | --- | --- |
+| 调试 | UART0 | PA10 TX / PA11 RX | 保留给板载 CH340E 和 Type-C，不外接业务模块 |
+| 视觉 | UART1 | PA8 TX / PA9 RX | 接 MaixCAM Pro，解析 `$...#` ASCII 协议 |
+| 电机 | UART2 | PB15 TX / PB16 RX | 接 X42S RS485 收发器，PB17 可做 DE/RE |
+
+UART2 也支持 A21/A22、A23/A24 等组合，但逐飞资料提示 A21、A23 属于“尽量不要使用”的特殊功能脚；因此本项目优先使用 PB15/PB16，避开 PB6-PB9 板载 SPI Flash、PB21 按键、PB22 LED 和 SWD/晶振相关引脚。
+
 ## MaixCAM 接线建议
 
 | MaixCAM | MSPM0G3507 |
@@ -64,6 +77,18 @@ E:\tianmengxing
 | 3V3/5V | 按 MaixCAM 实际供电要求单独确认 |
 
 若只接收 MaixCAM 视觉数据，最小接线为 MaixCAM TX、GND、供电。注意两端必须共地，串口电平优先保持 3.3 V TTL。
+
+## X42S RS485 接线建议
+
+| RS485 模块 | MSPM0G3507 |
+| --- | --- |
+| DI | PB15 / UART2 TX |
+| RO | PB16 / UART2 RX |
+| DE 与 /RE | PB17，可选 |
+| GND | GND |
+| A/B | X42S A/B |
+
+X42S 默认自由协议为二进制帧，校验字节固定 `0x6B`，不要和 MaixCAM 的 ASCII 帧解析共用同一个状态机。
 
 ## 协议实现提醒
 
@@ -80,4 +105,3 @@ OpenMV4 例程默认找 `[` 和 `]`，不能直接照搬协议解析逻辑；适
 3. 检查 `$V,`。
 4. 用逗号分割并转换字段。
 5. 字段数量或数值转换失败就丢弃该帧。
-
