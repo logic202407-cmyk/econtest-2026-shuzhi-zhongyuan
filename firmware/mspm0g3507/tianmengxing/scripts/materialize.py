@@ -26,7 +26,7 @@ def copy_overlay(overlay_root: Path, output_root: Path) -> None:
         shutil.copy2(source, destination)
 
 
-def replace_required(path: Path, old: str, new: str, count: int = 1) -> None:
+def replace_required(path: Path, old: str, new: str, count: int = -1) -> None:
     text = path.read_text(encoding="utf-8")
     if old not in text:
         raise RuntimeError(f"Expected V3.3.4 text was not found in {path}: {old[:80]!r}")
