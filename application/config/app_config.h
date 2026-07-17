@@ -42,6 +42,10 @@
 #define MAIXCAM_MAX_PAYLOAD_LEN         16U
 #define APP_UART_POLL_BUDGET             32U
 
+// UART0 diagnostic log switch. Logs are state-transition oriented to avoid
+// consuming the control loop with per-byte output.
+#define APP_DEBUG_LOG_ENABLED            1U
+
 // X42S motor configuration.
 #define X42S_FIRMWARE_X_FREE            1U
 #define VISION_ANGLE_UNITS_PER_DEG      100U

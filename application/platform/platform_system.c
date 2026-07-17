@@ -1,7 +1,10 @@
 #include "platform_system.h"
 
+#include <string.h>
+
 #include "zf_common_headfile.h"
 
+#include "../config/app_config.h"
 #include "platform_gpio.h"
 
 static volatile uint32_t g_platform_tick_ms;
@@ -44,6 +47,17 @@ void App_PlatformInit(void)
 void App_DebugUartInit(void)
 {
     debug_init();
+}
+
+void App_DebugLog(const char *message)
+{
+#if APP_DEBUG_LOG_ENABLED
+    if (message != NULL) {
+        (void)debug_send_buffer((const uint8 *)message, (uint32)strlen(message));
+    }
+#else
+    (void)message;
+#endif
 }
 
 uint32_t App_GetMillis(void)
