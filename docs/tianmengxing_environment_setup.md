@@ -34,8 +34,8 @@ Install the following on Windows:
 | Git | Current Git for Windows | Clone, commit, and push repository changes |
 | Git Credential Manager | Included with current Git for Windows | GitHub HTTPS authentication |
 
-The local verified Keil installation used `E:\Keil_MDK539`. The installation
-folder may be different on another computer.
+The verified build used Keil MDK 5.39 with ARM Compiler 6.21. The installation
+folder is computer-specific and is not part of this repository.
 
 ## 3. Install the TI Device Pack
 
@@ -56,7 +56,7 @@ Clone or download the official source without modifying it:
 
 ```powershell
 git clone https://gitee.com/seekfree/MSPM0G3507_Library.git `
-  D:\embedded\MSPM0G3507_Library-master
+  <seekfree-source-dir>
 ```
 
 If cloning is unavailable, download the archive from:
@@ -68,7 +68,7 @@ https://gitee.com/seekfree/MSPM0G3507_Library/repository/archive/master.zip
 Extract it to a new directory, for example:
 
 ```text
-D:\embedded\MSPM0G3507_Library-master
+<seekfree-source-dir>
 ```
 
 ## 5. Generate the TianMengXing Keil Workspace
@@ -86,8 +86,8 @@ upstream source directory.
 
 ```powershell
 py .\firmware\mspm0g3507\tianmengxing\scripts\materialize.py `
-  D:\embedded\MSPM0G3507_Library-master `
-  --output D:\embedded\MSPM0G3507_Library-TianMengXing-V3.3.4
+  <seekfree-source-dir> `
+  --output <generated-output-dir>
 ```
 
 If `py` is unavailable, use the full path to a Python 3 interpreter. The

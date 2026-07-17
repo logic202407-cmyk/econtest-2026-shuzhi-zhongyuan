@@ -56,7 +56,7 @@ X42S 驱动已有相同的 `App_Rs485SetTxEnable(true) -> App_MotorSend() -> App
 
 ## SysConfig 检查
 
-已只读检查生成工程 `E:\26diansai\天猛星逐飞库适配与生成工程\MSPM0G3507_Library-TianMengXing-V3.3.4\SeekFree_MSPM0G3507_Opensource_Library\libraries\sdk\ti_config`：
+已只读检查生成工程中的 `SeekFree_MSPM0G3507_Opensource_Library/libraries/sdk/ti_config`：
 
 - `.syscfg`、`ti_msp_dl_config.c` 和 `ti_msp_dl_config.h` 未生成 UART1、UART2、PA8/PA9、PB15/PB16 或 PB17 配置。
 - 本次未修改任何 SysConfig 或生成文件。

@@ -28,8 +28,8 @@ Windows PowerShell 示例：
 
 ```powershell
 python .\firmware\mspm0g3507\tianmengxing\scripts\materialize.py `
-  D:\Downloads\MSPM0G3507_Library-master `
-  --output D:\Projects\MSPM0G3507_Library-TianMengXing-V3.3.4
+  <seekfree-source-dir> `
+  --output <generated-output-dir>
 ```
 
 生成后的正式 Keil 工程入口：

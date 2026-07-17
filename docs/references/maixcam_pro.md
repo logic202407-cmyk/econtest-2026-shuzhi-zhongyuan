@@ -2,7 +2,7 @@
 
 ## 原始资料
 
-- 本机资料：`E:\26diansai\Sipeed官方下载资料\MaixCAM\MaixCAM`，约 176.9 MB。
+- 原始 MaixCAM 资料不纳入仓库；请从官方页面或队伍共享存储获取。
 - 官方资料：[MaixCAM Pro 页面](https://wiki.sipeed.com/hardware/zh/maixcam/maixcam_pro.html)、[MaixPy UART 文档](https://wiki.sipeed.com/maixpy/doc/en/peripheral/uart.html)。
 
 原始包适合在需要刷机、查扩展接口或复现官方示例时使用；日常视觉联调不需要整包复制到主控工程。

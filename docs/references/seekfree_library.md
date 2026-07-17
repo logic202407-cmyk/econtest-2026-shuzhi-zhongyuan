@@ -2,8 +2,8 @@
 
 ## 原始库与生成工程
 
-- 逐飞原始库：`E:\26diansai\逐飞MSPM0G3507原始库\MSPM0G3507_Library-master`，约 302 MB；官方地址：[SeekFree MSPM0G3507 Library](https://gitee.com/seekfree/MSPM0G3507_Library)。
-- 天猛星生成工程：`E:\26diansai\天猛星逐飞库适配与生成工程\MSPM0G3507_Library-TianMengXing-V3.3.4`，约 50 MB。
+- 逐飞原始库不纳入仓库；请从 [SeekFree MSPM0G3507 Library](https://gitee.com/seekfree/MSPM0G3507_Library) 获取。
+- 天猛星生成工程由仓库中的 `firmware/mspm0g3507/tianmengxing/scripts/materialize.py` 在每台电脑本地生成。
 - 仓库中的适配层与生成脚本：`firmware/mspm0g3507/tianmengxing/`。
 
 ## 工程入口
