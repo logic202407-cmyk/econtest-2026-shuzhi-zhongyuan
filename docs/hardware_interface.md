@@ -21,7 +21,7 @@ X42S 闭环步进电机
 
 | 模块 | 职责 |
 |-|-|
-| MaixCAM Pro | 负责视觉识别，输出 `$V,mode,cx,cy,w,h,D,x,angle,conf#` 视觉帧 |
+| MaixCAM Pro | 负责视觉识别，经 UART1 输出 yaw、pitch、置信度二进制帧；详见 `docs/maixcam_protocol.md` |
 | MSPM0G3507 天猛星 | 负责 UART 接收解析、按键/LED/OLED 等应用逻辑、云台/电机控制决策 |
 | RS485 收发器 | 负责把 MSPM0 的 UART2 TTL 信号转换为 X42S 使用的半双工 RS485 总线信号 |
 | X42S | 执行云台运动，接收位置、速度、使能、停止、读位置等控制指令 |

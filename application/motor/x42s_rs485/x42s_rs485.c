@@ -14,10 +14,15 @@ static int32_t g_last_position[X42S_MAX_ID + 1U];
 static int32_t g_last_speed[X42S_MAX_ID + 1U];
 static uint8_t g_rx_buf[16];
 static uint8_t g_rx_len;
+static X42S_PortOps g_port_ops;
 
 static uint32_t abs_i32(int32_t value)
 {
-    return (value < 0) ? (uint32_t)(-value) : (uint32_t)value;
+    if (value < 0) {
+        return (uint32_t)(-(value + 1)) + 1U;
+    }
+
+    return (uint32_t)value;
 }
 
 static void put_u16(uint8_t *buf, uint16_t value)
@@ -49,14 +54,39 @@ static uint32_t get_u32(const uint8_t *buf)
 
 static void send_frame(const uint8_t *frame, size_t len)
 {
-    X42S_PortSetTxEnable(true);
-    X42S_PortSend(frame, len);
-    X42S_PortSetTxEnable(false);
+    if (g_port_ops.set_tx_enable != NULL) {
+        g_port_ops.set_tx_enable(true);
+    } else {
+        X42S_PortSetTxEnable(true);
+    }
+
+    if (g_port_ops.send != NULL) {
+        g_port_ops.send(frame, len);
+    } else {
+        X42S_PortSend(frame, len);
+    }
+
+    if (g_port_ops.set_tx_enable != NULL) {
+        g_port_ops.set_tx_enable(false);
+    } else {
+        X42S_PortSetTxEnable(false);
+    }
 }
 
 static uint8_t direction_from_signed(int32_t value)
 {
     return (value < 0) ? X42S_DIR_CCW : X42S_DIR_CW;
+}
+
+void X42S_SetPortOps(const X42S_PortOps *ops)
+{
+    if (ops == NULL) {
+        g_port_ops.send = NULL;
+        g_port_ops.set_tx_enable = NULL;
+        return;
+    }
+
+    g_port_ops = *ops;
 }
 
 void X42S_Enable(uint8_t id)

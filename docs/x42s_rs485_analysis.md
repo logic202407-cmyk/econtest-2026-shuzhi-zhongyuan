@@ -105,10 +105,11 @@ application/motor/x42s_rs485/
 设计原则：
 
 - 驱动层只负责组 X42S 自由协议帧，不直接绑定某个 UART 外设。
-- 平台层实现 `X42S_PortSend()`，在天猛星上接到 `MOTOR_UART_INDEX / MOTOR_UART_TX_PIN / MOTOR_UART_RX_PIN`。
-- 如果 RS485 模块需要方向控制，平台层实现 `X42S_PortSetTxEnable()`，内部使用 `RS485_DE_PIN`。
+- 驱动支持 `X42S_SetPortOps()` 注入发送与方向控制回调；未注入时兼容弱符号 `X42S_PortSend()` / `X42S_PortSetTxEnable()`。两种方式都不把驱动绑定到具体 UART。
+- 天猛星平台回调使用 `MOTOR_UART_INDEX / MOTOR_UART_TX_PIN / MOTOR_UART_RX_PIN`，方向控制使用 `RS485_DE_PIN`。
+- 发送回调必须在 UART2 最后一个字节真正发送完成后才返回；驱动在回调返回后立即将 DE/RE 切回接收态，避免 PB17 过早拉低截断帧尾。
 - 硬件资源统一从 `application/config/app_config.h` 获取，业务代码禁止直接散写 `PB15`、`PB16`、`PB17`。
-- 初版提供使能、失能、位置、速度、读位置接口；后续硬件跑通后再补完整回零、读速度、同步控制和 Modbus-RTU。
+- 当前已提供使能、失能、位置、速度、停止、读位置接口；后续硬件跑通后再补完整回零、读速度、同步控制和 Modbus-RTU。
 
 接线建议：
 

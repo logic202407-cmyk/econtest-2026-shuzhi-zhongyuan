@@ -1,6 +1,6 @@
 # MaixCAM 与主控统一接口规范
 
-> 本文件是 MaixCAM Pro、STM32F407 和 MSPM0G3507 三端联调的唯一接口基准。井、凯和队长后续代码均须遵循本文件；如需修改字段、波特率或命令格式，必须先修改本文件并通知全队。
+> 本文件保留第一阶段 `$V,...#` ASCII 联调协议，主要供 MaixCAM 假数据和 STM32F407 接收端兼容使用。MSPM0G3507 云台链路已切换为二进制协议，以 `docs/maixcam_protocol.md` 为当前基准；井、凯和队长修改任一协议前都必须先更新对应文档并通知全队。
 
 ## 1. 角色定义
 
@@ -41,9 +41,9 @@ MaixCAM 具体接线为 `MaixCAM TX -> PA9 / UART1 RX`，`MaixCAM RX <- PA8 / UA
 | 校验位 | None |
 | 停止位 | 1 |
 | 流控 | None |
-| 编码 | ASCII |
+| 编码 | ASCII（早期联调协议） |
 
-X42S RS485 使用 UART2，默认同为 `115200, 8N1`，但协议为二进制自由协议，不使用本文件的 `$...#` 帧格式；详见 `docs/x42s_rs485_analysis.md`。
+X42S RS485 使用 UART2，默认同为 `115200, 8N1`，但协议为二进制自由协议，不使用本文件的 `$...#` 帧格式；详见 `docs/x42s_rs485_analysis.md`。MSPM0G3507 的 MaixCAM 云台链路同样使用 `115200, 8N1`，但采用 `0xAA 0x55` 二进制帧，详见 `docs/maixcam_protocol.md`。
 
 ## 4. 视觉数据帧 V1
 

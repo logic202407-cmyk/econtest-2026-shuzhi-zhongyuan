@@ -5,14 +5,20 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "../../config/app_config.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #define X42S_CHECK_FIXED              0x6BU
-#define X42S_DEFAULT_ACC_RPM_S        100U
-#define X42S_DEFAULT_DEC_RPM_S        100U
-#define X42S_DEFAULT_SPEED_0P1_RPM    300U
+#define X42S_DEFAULT_ACC_RPM_S        X42S_DEFAULT_ACC_RPM_S_CONFIG
+#define X42S_DEFAULT_DEC_RPM_S        X42S_DEFAULT_DEC_RPM_S_CONFIG
+#define X42S_DEFAULT_SPEED_0P1_RPM    X42S_DEFAULT_SPEED_0P1_RPM_CFG
+#define X42S_UART_INDEX               MOTOR_UART_INDEX
+#define X42S_UART_TX_PIN              MOTOR_UART_TX_PIN
+#define X42S_UART_RX_PIN              MOTOR_UART_RX_PIN
+#define X42S_RS485_DE_PIN             RS485_DE_PIN
 
 typedef enum
 {
@@ -20,6 +26,13 @@ typedef enum
     X42S_DIR_CCW = 1
 } X42S_Direction;
 
+typedef struct
+{
+    void (*send)(const uint8_t *data, size_t len);
+    void (*set_tx_enable)(bool enable);
+} X42S_PortOps;
+
+void X42S_SetPortOps(const X42S_PortOps *ops);
 void X42S_Enable(uint8_t id);
 void X42S_Disable(uint8_t id);
 void X42S_SetPosition(uint8_t id, int32_t position);
