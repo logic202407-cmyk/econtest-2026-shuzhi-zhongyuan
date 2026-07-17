@@ -16,7 +16,7 @@
 
 | 信号 | 建议 GPIO | 说明 |
 |-|-|-|
-| DE/RE | PB17 | 普通 485 芯片使用；发送前置 1，发送完成后置 0 |
+| DE/RE | PB17 | 手动方向 485 芯片预留；当前自动方向模块不连接 |
 
 如果使用自动收发方向的 RS485 模块，可不接 DE/RE。
 
@@ -61,12 +61,12 @@ MaixCAM GND -> MSPM0 GND
 ```text
 MSPM0 PB15 / UART2 TX -> RS485 DI
 MSPM0 PB16 / UART2 RX <- RS485 RO
-MSPM0 PB17 / GPIO     -> RS485 DE 与 /RE，可选
+MSPM0 PB17 / GPIO     -> 手动方向 RS485 模块的 DE 与 /RE，可选
 MSPM0 GND             -> RS485 模块 GND
 RS485 A/B             -> X42S A/B
 ```
 
-普通半双工 RS485 收发器建议把 DE 和 /RE 短接到 PB17：
+当前采购的自动方向模块没有 DE/RE 引脚，PB17 不连接该模块。普通半双工 RS485 收发器建议把 DE 和 /RE 短接到 PB17：
 
 - 接收态：PB17 = 0
 - 发送态：PB17 = 1

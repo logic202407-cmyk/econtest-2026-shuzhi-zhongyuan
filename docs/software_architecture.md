@@ -37,9 +37,9 @@ MaixCAM Pro --UART1--> vision/maixcam_protocol
 | --- | --- |
 | `App_DebugUartInit()` | 使用 UART0，PA10/PA11，仅调试 |
 | `App_VisionUartInit()` | 使用 UART1，PA8/PA9，115200 8N1 |
-| `App_MotorUartInit()` | 使用 UART2，PB15/PB16，115200 8N1，并初始化 PB17 输出为接收态 |
+| `App_MotorUartInit()` | 使用 UART2，PB15/PB16，115200 8N1；PB17 仅为手动方向 RS485 模块预留 |
 | `App_MotorSend()` | 发送完成后才返回，确保 DE/RE 不会过早拉低 |
-| `App_Rs485SetTxEnable()` | `true` 设 PB17 发送态，`false` 设接收态 |
+| `App_Rs485SetTxEnable()` | 手动方向模块时：`true` 设 PB17 发送态，`false` 设接收态；自动方向模块不接 PB17 |
 | `App_GetMillis()` | 返回单调递增毫秒计数，允许 `uint32_t` 自然回绕 |
 
 应用层不直接出现 PA8、PA9、PB15、PB16、PB17 等引脚号；实际硬件映射只能从 `app_config.h` 取得。

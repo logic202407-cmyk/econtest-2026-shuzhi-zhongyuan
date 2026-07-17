@@ -35,7 +35,7 @@ hardware
 
 ## RS485 发送时序
 
-`platform_rs485_send()` 的顺序固定为：
+`platform_rs485_send()` 支持手动方向模块时的顺序固定为：
 
 1. PB17 设为发送态。
 2. 通过 UART2 发送整帧。
@@ -43,6 +43,8 @@ hardware
 4. PB17 设为接收态。
 
 X42S 驱动已有相同的 `App_Rs485SetTxEnable(true) -> App_MotorSend() -> App_Rs485SetTxEnable(false)` 调用链；其中 `App_MotorSend()` 已在平台层等待发送完成，因此不会在帧尾仍在发送时切换 PB17。
+
+当前采购的 TTL-RS485 小模块为自动方向型，没有 DE/RE 引脚：PB17 不接模块，模块根据 UART2 的 TXD 自动切换方向。平台层仍保留 PB17 逻辑，以兼容未来更换为手动方向模块的情况。
 
 ## GPIO 映射
 
@@ -54,7 +56,7 @@ X42S 驱动已有相同的 `App_Rs485SetTxEnable(true) -> App_MotorSend() -> App
 
 ## SysConfig 检查
 
-已只读检查生成工程 `E:\26diansai\seekfree_tianmengxing\MSPM0G3507_Library-TianMengXing-V3.3.4\SeekFree_MSPM0G3507_Opensource_Library\libraries\sdk\ti_config`：
+已只读检查生成工程 `E:\26diansai\天猛星逐飞库适配与生成工程\MSPM0G3507_Library-TianMengXing-V3.3.4\SeekFree_MSPM0G3507_Opensource_Library\libraries\sdk\ti_config`：
 
 - `.syscfg`、`ti_msp_dl_config.c` 和 `ti_msp_dl_config.h` 未生成 UART1、UART2、PA8/PA9、PB15/PB16 或 PB17 配置。
 - 本次未修改任何 SysConfig 或生成文件。

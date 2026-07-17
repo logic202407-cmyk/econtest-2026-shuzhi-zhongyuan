@@ -70,3 +70,4 @@ $V,1,320,240,80,80,150.0,8.0,0.0,0.99#
 ## 资料笔记
 
 - [MSPM0G3507 天猛星资料阅读笔记](docs/mspm0_g3507_resources.md)
+- [队友资料入口](docs/references/README.md)
