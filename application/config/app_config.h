@@ -47,6 +47,10 @@
 #define APP_DEBUG_LOG_ENABLED            1U
 
 // X42S motor configuration.
+// Motor IDs, directions, zero points, and mechanical limits for the custom
+// 3D-printed gimbal are not hardware-calibrated yet. The values below are
+// commissioning defaults only; record confirmed values in
+// docs/gimbal_parameter_confirmation.md before increasing motion ranges.
 #define X42S_FIRMWARE_X_FREE            1U
 #define VISION_ANGLE_UNITS_PER_DEG      100U
 #define X42S_X_POSITION_UNITS_PER_DEG   10U
@@ -57,6 +61,8 @@
 #define X42S_DEFAULT_SPEED_0P1_RPM_CFG  300U
 
 // Gimbal control parameters. Angles are stored in 0.01 degree unless noted.
+// The current ranges are conservative software bounds, not verified mechanical
+// end stops. Keep low-speed, small-angle commissioning until calibration.
 #define GIMBAL_CONTROL_PERIOD_MS        20U
 #define GIMBAL_TARGET_LOST_TIMEOUT_MS   MAIXCAM_TIMEOUT_MS
 #define GIMBAL_YAW_KP_NUM               1
