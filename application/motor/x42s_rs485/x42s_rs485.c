@@ -8,7 +8,7 @@
 #define X42S_MAX_ID 32U
 #endif
 
-#if defined(__CC_ARM) || defined(__ARMCC_VERSION)
+#if defined(__CC_ARM) && !defined(__clang__)
 #define X42S_WEAK __weak
 #elif defined(_MSC_VER)
 #define X42S_WEAK

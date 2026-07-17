@@ -9,12 +9,12 @@ static uart_index_enum platform_uart_index(Platform_Uart uart)
 {
     switch (uart) {
     case PLATFORM_UART_DEBUG:
-        return DEBUG_UART_INDEX;
+        return APP_DEBUG_UART_INDEX;
     case PLATFORM_UART_VISION:
-        return VISION_UART_INDEX;
+        return APP_VISION_UART_INDEX;
     case PLATFORM_UART_MOTOR:
     default:
-        return MOTOR_UART_INDEX;
+        return APP_MOTOR_UART_INDEX;
     }
 }
 
@@ -22,12 +22,12 @@ static UART_Regs *platform_uart_regs(Platform_Uart uart)
 {
     switch (uart) {
     case PLATFORM_UART_DEBUG:
-        return DEBUG_UART;
+        return APP_DEBUG_UART;
     case PLATFORM_UART_VISION:
-        return VISION_UART;
+        return APP_VISION_UART;
     case PLATFORM_UART_MOTOR:
     default:
-        return MOTOR_UART;
+        return APP_MOTOR_UART;
     }
 }
 
@@ -35,19 +35,19 @@ void platform_uart_init(Platform_Uart uart)
 {
     switch (uart) {
     case PLATFORM_UART_DEBUG:
-        uart_init(DEBUG_UART_INDEX, DEBUG_UART_BAUDRATE,
-                  DEBUG_UART_TX_PIN, DEBUG_UART_RX_PIN);
+        uart_init(APP_DEBUG_UART_INDEX, APP_DEBUG_UART_BAUDRATE,
+                  APP_DEBUG_UART_TX_PIN, APP_DEBUG_UART_RX_PIN);
         break;
 
     case PLATFORM_UART_VISION:
-        uart_init(VISION_UART_INDEX, VISION_UART_BAUDRATE,
-                  VISION_UART_TX_PIN, VISION_UART_RX_PIN);
+        uart_init(APP_VISION_UART_INDEX, APP_VISION_UART_BAUDRATE,
+                  APP_VISION_UART_TX_PIN, APP_VISION_UART_RX_PIN);
         break;
 
     case PLATFORM_UART_MOTOR:
     default:
-        uart_init(MOTOR_UART_INDEX, MOTOR_UART_BAUDRATE,
-                  MOTOR_UART_TX_PIN, MOTOR_UART_RX_PIN);
+        uart_init(APP_MOTOR_UART_INDEX, APP_MOTOR_UART_BAUDRATE,
+                  APP_MOTOR_UART_TX_PIN, APP_MOTOR_UART_RX_PIN);
         break;
     }
 }

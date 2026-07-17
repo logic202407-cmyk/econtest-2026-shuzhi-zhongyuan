@@ -8,7 +8,7 @@
 #include "motor/x42s_rs485/x42s_rs485.h"
 #include "vision/maixcam_protocol.h"
 
-#if defined(__CC_ARM) || defined(__ARMCC_VERSION)
+#if defined(__CC_ARM) && !defined(__clang__)
 #define APP_WEAK __weak
 #else
 #define APP_WEAK __attribute__((weak))

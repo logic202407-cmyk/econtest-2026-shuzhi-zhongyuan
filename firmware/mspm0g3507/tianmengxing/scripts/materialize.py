@@ -97,7 +97,7 @@ def patch_common_library(tree_root: Path) -> None:
     ti_config = libraries / "sdk" / "ti_config"
 
     headfile = common / "zf_common_headfile.h"
-    marker = "//===================================================芯片外设驱动层==================================================="
+    marker = '#include "zf_driver_gpio.h"\n'
     include = (
         "//===================================================天猛星板级定义===================================================\n"
         "#include \"zf_common_board_tianmengxing.h\"\n"
@@ -106,8 +106,10 @@ def patch_common_library(tree_root: Path) -> None:
     text = headfile.read_text(encoding="utf-8")
     if "zf_common_board_tianmengxing.h" not in text:
         if marker not in text:
-            raise RuntimeError(f"Cannot locate insertion marker in {headfile}")
-        headfile.write_text(text.replace(marker, include + marker, 1), encoding="utf-8")
+            raise RuntimeError(f"Cannot locate GPIO driver include in {headfile}")
+        # tmx_board_init() calls gpio_init(), whose declaration must already
+        # be visible when this aggregate header is compiled with ARMCLANG.
+        headfile.write_text(text.replace(marker, marker + "\n" + include, 1), encoding="utf-8")
 
     gpio_file = driver / "zf_driver_gpio.c"
     gpio_text = gpio_file.read_text(encoding="utf-8")
