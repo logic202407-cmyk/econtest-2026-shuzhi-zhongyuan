@@ -18,6 +18,7 @@ static Gimbal_Control g_gimbal;
 
 /* Platform hooks are implemented by the TianMengXing project integration. */
 APP_WEAK void App_SystemInit(void) {}
+APP_WEAK void App_PlatformInit(void) {}
 APP_WEAK void App_DebugUartInit(void) {}
 APP_WEAK void App_VisionUartInit(void) {}
 APP_WEAK void App_MotorUartInit(void) {}
@@ -66,6 +67,7 @@ void App_Init(void)
     };
 
     App_SystemInit();
+    App_PlatformInit();
     App_DebugUartInit();
     App_VisionUartInit();
     App_MotorUartInit();

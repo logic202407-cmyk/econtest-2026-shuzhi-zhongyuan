@@ -16,11 +16,11 @@ typedef enum
     PLATFORM_UART_MOTOR
 } Platform_Uart;
 
-void Platform_UartInit(Platform_Uart uart);
-bool Platform_UartReadByte(Platform_Uart uart, uint8_t *byte);
-void Platform_UartWrite(Platform_Uart uart, const uint8_t *data, size_t len);
-void Platform_UartWaitTxComplete(Platform_Uart uart);
-void Platform_Rs485Write(const uint8_t *data, size_t len);
+void platform_uart_init(Platform_Uart uart);
+bool platform_uart_receive(Platform_Uart uart, uint8_t *byte);
+void platform_uart_send(Platform_Uart uart, const uint8_t *data, size_t len);
+void platform_uart_wait_tx_complete(Platform_Uart uart);
+void platform_rs485_send(const uint8_t *data, size_t len);
 
 #ifdef __cplusplus
 }

@@ -31,7 +31,7 @@ static UART_Regs *platform_uart_regs(Platform_Uart uart)
     }
 }
 
-void Platform_UartInit(Platform_Uart uart)
+void platform_uart_init(Platform_Uart uart)
 {
     switch (uart) {
     case PLATFORM_UART_DEBUG:
@@ -52,7 +52,7 @@ void Platform_UartInit(Platform_Uart uart)
     }
 }
 
-bool Platform_UartReadByte(Platform_Uart uart, uint8_t *byte)
+bool platform_uart_receive(Platform_Uart uart, uint8_t *byte)
 {
     if (byte == NULL) {
         return false;
@@ -61,7 +61,7 @@ bool Platform_UartReadByte(Platform_Uart uart, uint8_t *byte)
     return uart_query_byte(platform_uart_index(uart), (uint8 *)byte) == ZF_TRUE;
 }
 
-void Platform_UartWrite(Platform_Uart uart, const uint8_t *data, size_t len)
+void platform_uart_send(Platform_Uart uart, const uint8_t *data, size_t len)
 {
     if (data == NULL || len == 0U) {
         return;
@@ -69,49 +69,49 @@ void Platform_UartWrite(Platform_Uart uart, const uint8_t *data, size_t len)
 
     uart_write_buffer(platform_uart_index(uart), (const uint8 *)data,
                       (uint32)len);
-    Platform_UartWaitTxComplete(uart);
+    platform_uart_wait_tx_complete(uart);
 }
 
-void Platform_UartWaitTxComplete(Platform_Uart uart)
+void platform_uart_wait_tx_complete(Platform_Uart uart)
 {
     while (DL_UART_isBusy(platform_uart_regs(uart))) {
     }
 }
 
-void Platform_Rs485Write(const uint8_t *data, size_t len)
+void platform_rs485_send(const uint8_t *data, size_t len)
 {
-    Platform_Rs485SetTxEnable(true);
-    Platform_UartWrite(PLATFORM_UART_MOTOR, data, len);
-    Platform_Rs485SetTxEnable(false);
+    platform_rs485_set_tx_enable(true);
+    platform_uart_send(PLATFORM_UART_MOTOR, data, len);
+    platform_rs485_set_tx_enable(false);
 }
 
 void App_DebugUartInit(void)
 {
-    Platform_UartInit(PLATFORM_UART_DEBUG);
+    platform_uart_init(PLATFORM_UART_DEBUG);
 }
 
 void App_VisionUartInit(void)
 {
-    Platform_UartInit(PLATFORM_UART_VISION);
+    platform_uart_init(PLATFORM_UART_VISION);
 }
 
 void App_MotorUartInit(void)
 {
-    Platform_UartInit(PLATFORM_UART_MOTOR);
-    Platform_Rs485SetTxEnable(false);
+    platform_uart_init(PLATFORM_UART_MOTOR);
+    platform_rs485_set_tx_enable(false);
 }
 
 bool App_VisionReadByte(uint8_t *byte)
 {
-    return Platform_UartReadByte(PLATFORM_UART_VISION, byte);
+    return platform_uart_receive(PLATFORM_UART_VISION, byte);
 }
 
 bool App_MotorReadByte(uint8_t *byte)
 {
-    return Platform_UartReadByte(PLATFORM_UART_MOTOR, byte);
+    return platform_uart_receive(PLATFORM_UART_MOTOR, byte);
 }
 
 void App_MotorSend(const uint8_t *data, size_t len)
 {
-    Platform_UartWrite(PLATFORM_UART_MOTOR, data, len);
+    platform_uart_send(PLATFORM_UART_MOTOR, data, len);
 }

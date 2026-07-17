@@ -7,11 +7,11 @@
 extern "C" {
 #endif
 
-void Platform_GpioInit(void);
-void Platform_LedSet(bool on);
-void Platform_LedToggle(void);
-bool Platform_KeyIsPressed(void);
-void Platform_Rs485SetTxEnable(bool enable);
+void platform_gpio_init(void);
+void platform_led_set(bool on);
+void platform_led_toggle(void);
+bool platform_key_read(void);
+void platform_rs485_set_tx_enable(bool enable);
 
 #ifdef __cplusplus
 }
