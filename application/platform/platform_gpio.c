@@ -32,11 +32,6 @@ void platform_rs485_set_tx_enable(bool enable)
                    enable ? RS485_DE_TX_LEVEL : RS485_DE_RX_LEVEL);
 }
 
-void App_PlatformInit(void)
-{
-    platform_gpio_init();
-}
-
 void App_Rs485SetTxEnable(bool enable)
 {
     platform_rs485_set_tx_enable(enable);

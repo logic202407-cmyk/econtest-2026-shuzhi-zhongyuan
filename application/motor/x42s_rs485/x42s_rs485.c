@@ -1,11 +1,17 @@
 #include "x42s_rs485.h"
 
+#if X42S_FIRMWARE_X_FREE != 1U
+#error "The current x42s_rs485 driver supports only X firmware free protocol."
+#endif
+
 #ifndef X42S_MAX_ID
 #define X42S_MAX_ID 32U
 #endif
 
 #if defined(__CC_ARM) || defined(__ARMCC_VERSION)
 #define X42S_WEAK __weak
+#elif defined(_MSC_VER)
+#define X42S_WEAK
 #else
 #define X42S_WEAK __attribute__((weak))
 #endif

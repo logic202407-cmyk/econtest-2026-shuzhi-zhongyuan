@@ -24,13 +24,17 @@ static int32_t limit_step(int32_t step)
 static int32_t calc_step_0p1deg(int16_t error_0p01deg,
                                 int32_t kp_num, int32_t kp_den)
 {
+    int32_t motor_error_0p1deg;
     int32_t step_0p1deg;
 
     if (kp_den == 0) {
         return 0;
     }
 
-    step_0p1deg = ((int32_t)error_0p01deg * kp_num) / (kp_den * 10);
+    motor_error_0p1deg = ((int32_t)error_0p01deg *
+                          (int32_t)X42S_X_POSITION_UNITS_PER_DEG) /
+                         (int32_t)VISION_ANGLE_UNITS_PER_DEG;
+    step_0p1deg = (motor_error_0p1deg * kp_num) / kp_den;
     return limit_step(step_0p1deg);
 }
 

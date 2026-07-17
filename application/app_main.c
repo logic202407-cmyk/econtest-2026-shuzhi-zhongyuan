@@ -2,6 +2,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "app_main.h"
 #include "config/app_config.h"
 #include "gimbal/gimbal_control.h"
 #include "motor/x42s_rs485/x42s_rs485.h"

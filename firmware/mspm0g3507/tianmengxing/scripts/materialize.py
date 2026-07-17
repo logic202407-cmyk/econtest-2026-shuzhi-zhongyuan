@@ -26,6 +26,63 @@ def copy_overlay(overlay_root: Path, output_root: Path) -> None:
         shutil.copy2(source, destination)
 
 
+def copy_application(repo_root: Path, output_library: Path) -> None:
+    source = repo_root / "application"
+    if not source.is_dir():
+        raise FileNotFoundError(f"Application directory is missing: {source}")
+    shutil.copytree(source, output_library / "project" / "application", dirs_exist_ok=True)
+
+
+def patch_keil_project(output_library: Path) -> None:
+    project = output_library / "project" / "mdk" / "SeekFree_MSPM0G3507_Device_Library.uvprojx"
+    text = project.read_text(encoding="utf-8")
+    include = (
+        r"..\application;..\application\config;..\application\platform;"
+        r"..\application\vision;..\application\motor\x42s_rs485;..\application\gimbal"
+    )
+
+    target_include = re.compile(
+        r"<IncludePath>([^<]*\.\.\\\.\.\\libraries\\zf_common[^<]*)</IncludePath>"
+    )
+    include_match = target_include.search(text)
+    if include_match is None:
+        raise RuntimeError(f"Cannot locate target include path in {project}")
+    if r"..\application" not in include_match.group(1):
+        updated = include_match.group(1) + ";" + include
+        text = text[:include_match.start(1)] + updated + text[include_match.end(1):]
+
+    if "<GroupName>application</GroupName>" not in text:
+        application = output_library / "project" / "application"
+        entries = []
+        for source in sorted(application.rglob("*")):
+            if source.suffix.lower() not in (".c", ".h"):
+                continue
+            relative = source.relative_to(application).as_posix().replace("/", "\\")
+            file_type = "1" if source.suffix.lower() == ".c" else "5"
+            entries.append(
+                "            <File>\n"
+                f"              <FileName>{source.name}</FileName>\n"
+                f"              <FileType>{file_type}</FileType>\n"
+                f"              <FilePath>..\\application\\{relative}</FilePath>\n"
+                "            </File>"
+            )
+        group = (
+            "        <Group>\n"
+            "          <GroupName>application</GroupName>\n"
+            "          <Files>\n"
+            + "\n".join(entries)
+            + "\n          </Files>\n"
+            "        </Group>\n"
+        )
+        marker = "      </Groups>"
+        if marker not in text:
+            raise RuntimeError(f"Cannot locate group list in {project}")
+        text = text.replace(marker, group + marker, 1)
+
+    with project.open("w", encoding="utf-8", newline="\r\n") as stream:
+        stream.write(text)
+
+
 def replace_required(path: Path, old: str, new: str, count: int = -1) -> None:
     text = path.read_text(encoding="utf-8")
     if old not in text:
@@ -79,6 +136,57 @@ def patch_common_library(tree_root: Path) -> None:
         ('GPIO1.associatedPins[0].pin.$assign      = "PA14";', 'GPIO1.associatedPins[0].pin.$assign      = "PB22";'),
     ):
         replace_required(syscfg, old, new)
+
+    syscfg_text = syscfg.read_text(encoding="utf-8")
+    if "UART_MAIXCAM" not in syscfg_text:
+        import_marker = 'const GPIO2   = GPIO.addInstance();\n'
+        import_block = (
+            import_marker +
+            'const GPIO3   = GPIO.addInstance();\n'
+            'const UART    = scripting.addModule("/ti/driverlib/UART", {}, false);\n'
+            'const UART1   = UART.addInstance();\n'
+            'const UART2   = UART.addInstance();\n'
+        )
+        if import_marker not in syscfg_text:
+            raise RuntimeError(f"Cannot add UART modules to {syscfg}")
+        syscfg_text = syscfg_text.replace(import_marker, import_block, 1)
+
+        config_marker = "SYSCTL.forceDefaultClkConfig = true;"
+        config_block = """GPIO3.port                               = \"PORTB\";
+GPIO3.$name                              = \"RS485_DE\";
+GPIO3.associatedPins[0].$name            = \"PIN_17\";
+GPIO3.associatedPins[0].direction        = \"OUTPUT\";
+GPIO3.associatedPins[0].initialValue     = \"CLEARED\";
+GPIO3.associatedPins[0].assignedPin      = \"17\";
+GPIO3.associatedPins[0].pin.$assign      = \"PB17\";
+
+UART1.$name                    = \"UART_MAIXCAM\";
+UART1.rxFifoThreshold          = \"DL_UART_RX_FIFO_LEVEL_ONE_ENTRY\";
+UART1.enableDMARX              = false;
+UART1.enableDMATX              = false;
+UART1.targetBaudRate           = 115200;
+UART1.peripheral.$assign       = \"UART1\";
+UART1.peripheral.rxPin.$assign = \"PA9\";
+UART1.peripheral.txPin.$assign = \"PA8\";
+UART1.txPinConfig.$name        = \"ti_driverlib_gpio_GPIOPinGeneric31\";
+UART1.rxPinConfig.$name        = \"ti_driverlib_gpio_GPIOPinGeneric32\";
+
+UART2.$name                    = \"UART_X42S\";
+UART2.rxFifoThreshold          = \"DL_UART_RX_FIFO_LEVEL_ONE_ENTRY\";
+UART2.enableDMARX              = false;
+UART2.enableDMATX              = false;
+UART2.targetBaudRate           = 115200;
+UART2.peripheral.$assign       = \"UART2\";
+UART2.peripheral.rxPin.$assign = \"PB16\";
+UART2.peripheral.txPin.$assign = \"PB15\";
+UART2.txPinConfig.$name        = \"ti_driverlib_gpio_GPIOPinGeneric33\";
+UART2.rxPinConfig.$name        = \"ti_driverlib_gpio_GPIOPinGeneric34\";
+
+"""
+        if config_marker not in syscfg_text:
+            raise RuntimeError(f"Cannot add UART configuration to {syscfg}")
+        syscfg_text = syscfg_text.replace(config_marker, config_block + config_marker, 1)
+        syscfg.write_text(syscfg_text, encoding="utf-8")
 
     config_c = ti_config / "ti_msp_dl_config.c"
     for old, new in (
@@ -163,10 +271,12 @@ def main() -> int:
 
     overlay = Path(__file__).resolve().parents[1] / "overlay"
     copy_overlay(overlay, output)
+    copy_application(Path(__file__).resolve().parents[4], output_library)
 
     patch_common_library(output_library)
     patch_common_library(output_examples)
     patch_examples(output_examples)
+    patch_keil_project(output_library)
 
     print(f"Created TianMengXing workspace: {output}")
     print("Open the Keil project and verify PB22 LED, UART0 PA10/PA11 and PB21 key on real hardware.")

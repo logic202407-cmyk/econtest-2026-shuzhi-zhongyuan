@@ -42,6 +42,9 @@
 #define APP_UART_POLL_BUDGET             32U
 
 // X42S motor configuration.
+#define X42S_FIRMWARE_X_FREE            1U
+#define VISION_ANGLE_UNITS_PER_DEG      100U
+#define X42S_X_POSITION_UNITS_PER_DEG   10U
 #define X42S_YAW_MOTOR_ID               1U
 #define X42S_PITCH_MOTOR_ID             2U
 #define X42S_DEFAULT_ACC_RPM_S_CONFIG   100U

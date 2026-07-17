@@ -85,11 +85,6 @@ void platform_rs485_send(const uint8_t *data, size_t len)
     platform_rs485_set_tx_enable(false);
 }
 
-void App_DebugUartInit(void)
-{
-    platform_uart_init(PLATFORM_UART_DEBUG);
-}
-
 void App_VisionUartInit(void)
 {
     platform_uart_init(PLATFORM_UART_VISION);
