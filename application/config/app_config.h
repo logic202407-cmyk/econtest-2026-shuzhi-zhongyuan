@@ -63,6 +63,9 @@
 // Gimbal control parameters. Angles are stored in 0.01 degree unless noted.
 // The current ranges are conservative software bounds, not verified mechanical
 // end stops. Keep low-speed, small-angle commissioning until calibration.
+#ifndef GIMBAL_MOTION_ENABLED
+#define GIMBAL_MOTION_ENABLED            0U
+#endif
 #define GIMBAL_CONTROL_PERIOD_MS        20U
 #define GIMBAL_TARGET_LOST_TIMEOUT_MS   MAIXCAM_TIMEOUT_MS
 #define GIMBAL_YAW_KP_NUM               1

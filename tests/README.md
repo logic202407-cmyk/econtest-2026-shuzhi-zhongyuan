@@ -7,6 +7,8 @@ application logic. It verifies:
 - Parser recovery after a corrupted frame.
 - X42S free-protocol command bytes, fixed `0x6B` check byte, and status reply parsing.
 - Gimbal target-loss stop behavior and yaw/pitch limit clamping.
+- Default gimbal motion lock: initialization disables both motors and valid
+  vision frames do not generate position commands.
 
 Run it from the repository root on a Windows machine with either Visual Studio
 Build Tools (`cl.exe`) or GCC (`gcc.exe`) available:
@@ -17,3 +19,5 @@ powershell -ExecutionPolicy Bypass -File .\tests\run_host_tests.ps1
 
 The script writes only to the ignored `build/host-tests/` directory. These are
 not hardware tests and do not replace the later UART and RS485 board tests.
+It builds the control-logic test with `GIMBAL_MOTION_ENABLED=1`, then separately
+builds the default locked configuration.

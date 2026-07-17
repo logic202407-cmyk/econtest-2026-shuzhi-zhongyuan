@@ -2,6 +2,7 @@
 
 #include "../motor/x42s_rs485/x42s_rs485.h"
 
+#if (GIMBAL_MOTION_ENABLED != 0U)
 static int32_t clamp_i32(int32_t value, int32_t min_value, int32_t max_value)
 {
     if (value < min_value) {
@@ -37,6 +38,7 @@ static int32_t calc_step_0p1deg(int16_t error_0p01deg,
     step_0p1deg = (motor_error_0p1deg * kp_num) / kp_den;
     return limit_step(step_0p1deg);
 }
+#endif
 
 void Gimbal_Init(Gimbal_Control *gimbal)
 {
@@ -47,22 +49,33 @@ void Gimbal_Init(Gimbal_Control *gimbal)
     gimbal->yaw_position_0p1deg = 0;
     gimbal->pitch_position_0p1deg = 0;
     gimbal->last_update_ms = 0U;
-    gimbal->stopped = true;
 
+#if (GIMBAL_MOTION_ENABLED == 0U)
+    /* A custom gimbal remains electrically disabled until it is calibrated. */
+    X42S_Disable(X42S_YAW_MOTOR_ID);
+    X42S_Disable(X42S_PITCH_MOTOR_ID);
+    gimbal->stopped = true;
+#else
     X42S_Enable(X42S_YAW_MOTOR_ID);
     X42S_Enable(X42S_PITCH_MOTOR_ID);
+    gimbal->stopped = false;
+#endif
 }
 
 void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
                    uint32_t now_ms)
 {
-    MaixCAM_Target target;
-    int32_t yaw_step;
-    int32_t pitch_step;
-
     if (gimbal == NULL || vision == NULL) {
         return;
     }
+
+#if (GIMBAL_MOTION_ENABLED == 0U)
+    (void)now_ms;
+    return;
+#else
+    MaixCAM_Target target;
+    int32_t yaw_step;
+    int32_t pitch_step;
 
     if ((uint32_t)(now_ms - gimbal->last_update_ms) <
         GIMBAL_CONTROL_PERIOD_MS) {
@@ -95,6 +108,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
     X42S_SetPosition(X42S_YAW_MOTOR_ID, gimbal->yaw_position_0p1deg);
     X42S_SetPosition(X42S_PITCH_MOTOR_ID, gimbal->pitch_position_0p1deg);
     gimbal->stopped = false;
+#endif
 }
 
 void Gimbal_Stop(Gimbal_Control *gimbal)
