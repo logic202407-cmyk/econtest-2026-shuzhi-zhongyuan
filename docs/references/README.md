@@ -2,7 +2,15 @@
 
 本目录只保存资料索引、版本和获取方式，不复制厂商手册、逐飞原始库或大体积生成工程。这样克隆仓库后仍能明确获得什么、从哪里获得以及如何核验版本。
 
-快速总览见 `docs/references/materials_summary.md`。
+## 精简版资料
+
+| 资料 | 摘要 |
+| --- | --- |
+| 项目总览 | `materials_summary.md` |
+| MaixCAM Pro | `maixcam_pro.md` |
+| 天猛星 MSPM0G3507 | `tianmengxing_mspm0g3507.md` |
+| 逐飞库与天猛星工程 | `seekfree_library.md` |
+| X42S 电机与例程 | `x42s_materials.md` |
 
 ## 共同资料
 
