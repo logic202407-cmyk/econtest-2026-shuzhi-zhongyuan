@@ -1,5 +1,6 @@
 param(
-    [string]$BuildDirectory = "build/host-tests"
+    [string]$BuildDirectory = "build/host-tests",
+    [string]$ArmclangPath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,6 +24,61 @@ $lockSources = @(
 
 New-Item -ItemType Directory -Force -Path $output | Out-Null
 
+function Resolve-Armclang {
+    param([string]$RequestedPath)
+
+    if ($RequestedPath -ne "") {
+        if (Test-Path -LiteralPath $RequestedPath) {
+            return (Resolve-Path -LiteralPath $RequestedPath).Path
+        }
+        throw "ArmclangPath does not exist: $RequestedPath"
+    }
+
+    $command = Get-Command armclang.exe -ErrorAction SilentlyContinue
+    if ($null -ne $command) {
+        return $command.Source
+    }
+
+    return ""
+}
+
+function Invoke-ArmclangCompileSet {
+    param(
+        [string]$Compiler,
+        [string[]]$CompileSources,
+        [string]$ObjectSubdir,
+        [string[]]$Defines
+    )
+
+    $objectDir = Join-Path $output $ObjectSubdir
+    New-Item -ItemType Directory -Force -Path $objectDir | Out-Null
+
+    $index = 0
+    foreach ($source in $CompileSources) {
+        $base = [System.IO.Path]::GetFileNameWithoutExtension($source)
+        $object = Join-Path $objectDir ("{0:D2}_{1}.o" -f $index, $base)
+        $index += 1
+        $args = @(
+            "-c",
+            "--target=arm-arm-none-eabi",
+            "-mcpu=cortex-m0plus",
+            "-std=c11",
+            "-Wall",
+            "-Werror",
+            "-I$root"
+        ) + $Defines + @(
+            $source,
+            "-o",
+            $object
+        )
+
+        & $Compiler @args
+        if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+        }
+    }
+}
+
 if (Get-Command cl.exe -ErrorAction SilentlyContinue) {
     & cl.exe /nologo /std:c11 /W4 /DGIMBAL_MOTION_ENABLED=1 /I$root /Fe:$executable $sources
     if ($LASTEXITCODE -eq 0) {
@@ -34,7 +90,18 @@ if (Get-Command cl.exe -ErrorAction SilentlyContinue) {
         & gcc.exe -std=c11 -Wall -Wextra -Werror -I$root -o $lockExecutable $lockSources
     }
 } else {
-    throw "No host C compiler found. Install Visual Studio Build Tools or a GCC toolchain."
+    $armclang = Resolve-Armclang -RequestedPath $ArmclangPath
+    if ($armclang -eq "") {
+        throw "No host C compiler found. Install Visual Studio Build Tools/GCC, or rerun with -ArmclangPath <path-to-armclang.exe> for compile-only checks."
+    }
+
+    Write-Host "No runnable host C compiler found; using ARMCLANG for compile-only checks."
+    Invoke-ArmclangCompileSet -Compiler $armclang -CompileSources $sources `
+        -ObjectSubdir "armclang-enabled" -Defines @("-DGIMBAL_MOTION_ENABLED=1")
+    Invoke-ArmclangCompileSet -Compiler $armclang -CompileSources $lockSources `
+        -ObjectSubdir "armclang-locked" -Defines @()
+    Write-Host "ARMCLANG compile-only checks passed. Host executables were not run."
+    exit 0
 }
 
 if ($LASTEXITCODE -ne 0) {

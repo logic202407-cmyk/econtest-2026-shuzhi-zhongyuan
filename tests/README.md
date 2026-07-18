@@ -21,3 +21,14 @@ The script writes only to the ignored `build/host-tests/` directory. These are
 not hardware tests and do not replace the later UART and RS485 board tests.
 It builds the control-logic test with `GIMBAL_MOTION_ENABLED=1`, then separately
 builds the default locked configuration.
+
+If the machine only has Keil MDK / ARMCLANG and no runnable host compiler, use
+compile-only checks:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tests\run_host_tests.ps1 `
+  -ArmclangPath <path-to-armclang.exe>
+```
+
+This verifies the same sources for Cortex-M0+ with `-Wall -Werror`, but it does
+not execute the host-side assertions.

@@ -1,5 +1,7 @@
 # 天猛星首次上板联调清单
 
+下载器和线材准备见 `docs/downloader_and_wiring_checklist.md`。本清单从硬件已经能接线、Keil 已能打开工程的状态开始。
+
 本清单用于硬件到位后的首次联调。当前云台是无厂家机械参数的 3D 打印自制件，
 因此工程默认锁定电机运动：`GIMBAL_MOTION_ENABLED` 为 `0` 时，初始化只向两个
 暂定 ID 发送失能命令，视觉目标不会生成位置命令。
@@ -84,4 +86,3 @@ python .\tools\serial_debug\serial_debug.py maixcam target `
 | 待填写 | UART1 | 待填写 | 待填写 | 待填写 |
 | 待填写 | 单轴 X42S | 待填写 | 待填写 | 待填写 |
 | 待填写 | 双轴云台 | 待填写 | 待填写 | 待填写 |
-
