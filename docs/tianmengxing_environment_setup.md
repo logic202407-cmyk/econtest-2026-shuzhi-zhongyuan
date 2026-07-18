@@ -81,7 +81,15 @@ cd econtest-2026-shuzhi-zhongyuan
 git switch feat/tianmengxing-seekfree-v3.3.4
 ```
 
-Run the generator using a new output directory. The output must not be the
+The repository now includes a generated full Keil workspace for convenience.
+Teammates can directly open:
+
+```text
+firmware/mspm0g3507/tianmengxing/full_project/MSPM0G3507_Library-TianMengXing-V3.3.4/SeekFree_MSPM0G3507_Opensource_Library/project/mdk/SeekFree_MSPM0G3507_Device_Library.uvprojx
+```
+
+Use the generator only when `application/`, `overlay/`, or `materialize.py`
+changes and the full workspace must be refreshed. The output must not be the
 upstream source directory.
 
 Recommended automated command:

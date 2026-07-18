@@ -24,6 +24,7 @@ Release/
 .idea/
 *.uvprojx.user
 *.uvoptx
+!firmware/mspm0g3507/tianmengxing/full_project/**/*.uvoptx
 .DS_Store
 Thumbs.db
 
@@ -31,4 +32,3 @@ Thumbs.db
 *.log
 tmp/
 temp/
-

@@ -72,3 +72,22 @@ $V,1,320,240,80,80,150.0,8.0,0.0,0.99#
 - [MSPM0G3507 天猛星资料阅读笔记](docs/mspm0_g3507_resources.md)
 - [队友资料入口](docs/references/README.md)
 - [天猛星开发环境配置](docs/tianmengxing_environment_setup.md)
+
+## MSPM0G3507 天猛星 Keil 工程
+
+为了降低队友复现成本，仓库已包含一份生成好的逐飞库天猛星完整工程：
+
+```text
+firmware/mspm0g3507/tianmengxing/full_project/
+└── MSPM0G3507_Library-TianMengXing-V3.3.4/
+    ├── SeekFree_MSPM0G3507_Opensource_Library/
+    └── Example/TianMengXing_Coreboard_Demo/
+```
+
+Keil 主工程入口：
+
+```text
+firmware/mspm0g3507/tianmengxing/full_project/MSPM0G3507_Library-TianMengXing-V3.3.4/SeekFree_MSPM0G3507_Opensource_Library/project/mdk/SeekFree_MSPM0G3507_Device_Library.uvprojx
+```
+
+该工程已配置天猛星 UART/GPIO 资源和 `application/` 代码分组。后续如果修改 `application/` 或适配脚本，可继续用 `tools/build_keil_project.ps1` 重新生成刷新。
