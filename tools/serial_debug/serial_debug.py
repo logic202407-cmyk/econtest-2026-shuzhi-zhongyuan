@@ -7,6 +7,7 @@ import argparse
 import struct
 import sys
 import time
+from dataclasses import dataclass
 from typing import Iterable
 
 
@@ -16,6 +17,13 @@ MAIX_TARGET_LOST = 0x02
 MAIX_HEARTBEAT = 0x03
 MAIX_ERROR = 0x04
 X42S_CHECK = 0x6B
+
+
+@dataclass(frozen=True)
+class NamedFrame:
+    label: str
+    frame: bytes
+    delay_after_s: float = 0.0
 
 
 def maix_frame(command: int, payload: bytes = b"") -> bytes:
@@ -141,6 +149,43 @@ def transmit(frame: bytes, port: str | None, baudrate: int, repeat: int, interva
                 time.sleep(interval_s)
 
 
+def transmit_sequence(
+    frames: list[NamedFrame],
+    port: str | None,
+    baudrate: int,
+    repeat: int,
+    interval_s: float,
+) -> None:
+    if repeat < 1:
+        raise ValueError("repeat must be at least one")
+    if interval_s < 0:
+        raise ValueError("interval must not be negative")
+
+    for index in range(repeat):
+        for item in frames:
+            print(f"{item.label}: {item.frame.hex(' ').upper()}")
+        if index + 1 < repeat:
+            print(f"-- repeat gap {interval_s:.3f}s --")
+
+    if port is None:
+        return
+
+    try:
+        import serial  # type: ignore[import-not-found]
+    except ImportError as exc:
+        raise RuntimeError("Install pyserial first: pip install pyserial") from exc
+
+    with serial.Serial(port=port, baudrate=baudrate, bytesize=8, parity="N", stopbits=1, timeout=0.2) as uart:
+        for index in range(repeat):
+            for item in frames:
+                uart.write(item.frame)
+                uart.flush()
+                if item.delay_after_s > 0:
+                    time.sleep(item.delay_after_s)
+            if index + 1 < repeat:
+                time.sleep(interval_s)
+
+
 def add_transport_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--port", help="Serial port to transmit to, for example COM7")
     parser.add_argument("--baud", type=int, default=115200, help="UART baud rate (default: 115200)")
@@ -168,6 +213,20 @@ def build_parser() -> argparse.ArgumentParser:
     error = maix_commands.add_parser("error", help="Send remote-error frame")
     error.add_argument("--code", type=lambda value: int(value, 0), required=True, help="Error code byte")
     add_transport_options(error)
+    maix_scenario = maix_commands.add_parser("scenario", help="Run a MaixCAM test scenario")
+    maix_scenario.add_argument(
+        "name",
+        choices=("center", "sweep-yaw", "sweep-pitch", "timeout"),
+        help="Scenario name",
+    )
+    maix_scenario.add_argument("--yaw", type=float, default=0.0, help="Center yaw in degrees")
+    maix_scenario.add_argument("--pitch", type=float, default=0.0, help="Center pitch in degrees")
+    maix_scenario.add_argument("--amplitude", type=float, default=5.0, help="Sweep amplitude in degrees")
+    maix_scenario.add_argument("--confidence", type=float, default=98.5, help="Confidence in percent")
+    maix_scenario.add_argument("--steps", type=int, default=11, help="Sweep sample count")
+    maix_scenario.add_argument("--hold", type=int, default=20, help="Target frames before timeout")
+    maix_scenario.add_argument("--timeout-gap", type=float, default=0.7, help="Silence duration for timeout scenario")
+    add_transport_options(maix_scenario)
 
     x42s = protocol.add_parser("x42s", help="X42S X-firmware free protocol")
     x42s_commands = x42s.add_subparsers(dest="command", required=True)
@@ -190,7 +249,102 @@ def build_parser() -> argparse.ArgumentParser:
     speed.add_argument("--acc", type=int, default=100, help="Acceleration in RPM/s")
     speed.add_argument("--sync", action="store_true", help="Set synchronous execution flag")
     add_transport_options(speed)
+    x42s_scenario = x42s_commands.add_parser("scenario", help="Run an X42S test scenario")
+    x42s_scenario.add_argument(
+        "name",
+        choices=("safe-check", "nudge-position"),
+        help="Scenario name",
+    )
+    x42s_scenario.add_argument("--id", type=int, required=True, help="Motor ID")
+    x42s_scenario.add_argument("--position", type=int, default=50, help="Nudge size in 0.1 degree units")
+    x42s_scenario.add_argument("--speed", type=int, default=300, help="Speed in 0.1 RPM units")
+    x42s_scenario.add_argument("--acc", type=int, default=100, help="Acceleration in RPM/s")
+    x42s_scenario.add_argument("--dec", type=int, default=100, help="Deceleration in RPM/s")
+    x42s_scenario.add_argument(
+        "--confirm-motion",
+        action="store_true",
+        help="Required for scenarios that move the motor",
+    )
+    add_transport_options(x42s_scenario)
     return parser
+
+
+def make_maix_scenario(args: argparse.Namespace) -> list[NamedFrame]:
+    if args.steps < 2 and args.name in ("sweep-yaw", "sweep-pitch"):
+        raise ValueError("steps must be at least two for sweep scenarios")
+    if args.hold < 1:
+        raise ValueError("hold must be at least one")
+    if args.timeout_gap < 0:
+        raise ValueError("timeout gap must not be negative")
+
+    if args.name == "center":
+        return [NamedFrame("target center", maix_target(args.yaw, args.pitch, args.confidence))]
+
+    if args.name == "sweep-yaw":
+        frames: list[NamedFrame] = []
+        for index in range(args.steps):
+            fraction = index / (args.steps - 1)
+            yaw = args.yaw - args.amplitude + (2 * args.amplitude * fraction)
+            frames.append(NamedFrame(f"target yaw {yaw:.2f} deg", maix_target(yaw, args.pitch, args.confidence), args.interval))
+        return frames
+
+    if args.name == "sweep-pitch":
+        frames = []
+        for index in range(args.steps):
+            fraction = index / (args.steps - 1)
+            pitch = args.pitch - args.amplitude + (2 * args.amplitude * fraction)
+            frames.append(NamedFrame(f"target pitch {pitch:.2f} deg", maix_target(args.yaw, pitch, args.confidence), args.interval))
+        return frames
+
+    if args.name == "timeout":
+        frames = [
+            NamedFrame(
+                f"target hold {index + 1}",
+                maix_target(args.yaw, args.pitch, args.confidence),
+                args.interval,
+            )
+            for index in range(args.hold)
+        ]
+        frames.append(NamedFrame(f"silence {args.timeout_gap:.3f}s", b"", args.timeout_gap))
+        frames.append(NamedFrame("target lost", maix_frame(MAIX_TARGET_LOST)))
+        return frames
+
+    raise ValueError("Unsupported MaixCAM scenario")
+
+
+def make_x42s_scenario(args: argparse.Namespace) -> list[NamedFrame]:
+    validate_motor_id(args.id)
+
+    if args.name == "safe-check":
+        return [
+            NamedFrame("disable", x42s_enable(args.id, False), 0.05),
+            NamedFrame("read position", x42s_request(args.id, 0x0F), 0.05),
+            NamedFrame("read speed", x42s_request(args.id, 0x0E), 0.05),
+            NamedFrame("stop", x42s_stop(args.id)),
+        ]
+
+    if args.name == "nudge-position":
+        if not args.confirm_motion:
+            raise ValueError("nudge-position moves the motor; add --confirm-motion after checking limits")
+        if args.position == 0:
+            raise ValueError("position must be non-zero for nudge-position")
+        return [
+            NamedFrame("enable", x42s_enable(args.id, True), 0.1),
+            NamedFrame(
+                f"position +{args.position}",
+                x42s_position(args.id, args.position, args.acc, args.dec, args.speed, 2, False),
+                0.4,
+            ),
+            NamedFrame(
+                f"position -{args.position}",
+                x42s_position(args.id, -args.position, args.acc, args.dec, args.speed, 2, False),
+                0.4,
+            ),
+            NamedFrame("stop", x42s_stop(args.id), 0.05),
+            NamedFrame("disable", x42s_enable(args.id, False)),
+        ]
+
+    raise ValueError("Unsupported X42S scenario")
 
 
 def make_frame(args: argparse.Namespace) -> bytes:
@@ -226,7 +380,13 @@ def make_frame(args: argparse.Namespace) -> bytes:
 def main(argv: Iterable[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     try:
-        transmit(make_frame(args), args.port, args.baud, args.repeat, args.interval)
+        if args.command == "scenario":
+            if args.protocol == "maixcam":
+                transmit_sequence(make_maix_scenario(args), args.port, args.baud, args.repeat, args.interval)
+            else:
+                transmit_sequence(make_x42s_scenario(args), args.port, args.baud, args.repeat, args.interval)
+        else:
+            transmit(make_frame(args), args.port, args.baud, args.repeat, args.interval)
     except (RuntimeError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
