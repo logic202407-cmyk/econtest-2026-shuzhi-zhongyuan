@@ -84,6 +84,22 @@ git switch feat/tianmengxing-seekfree-v3.3.4
 Run the generator using a new output directory. The output must not be the
 upstream source directory.
 
+Recommended automated command:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\build_keil_project.ps1 `
+  -SeekFreeSourceDir <seekfree-source-dir> `
+  -OutputDir <generated-output-dir> `
+  -KeilUv4Path <path-to-UV4.exe>
+```
+
+If `UV4.exe` is already in `PATH`, or `KEIL_UV4_PATH` points to it, the
+`-KeilUv4Path` argument can be omitted. The script runs `materialize.py`, checks
+the generated structure, verifies Keil project references and the frozen
+UART/GPIO map, then runs a Keil rebuild.
+
+Manual generation command:
+
 ```powershell
 py .\firmware\mspm0g3507\tianmengxing\scripts\materialize.py `
   <seekfree-source-dir> `
