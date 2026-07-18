@@ -6,7 +6,11 @@ param(
 $ErrorActionPreference = "Stop"
 
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
-$output = Join-Path $root $BuildDirectory
+if ([System.IO.Path]::IsPathRooted($BuildDirectory)) {
+    $output = $BuildDirectory
+} else {
+    $output = Join-Path $root $BuildDirectory
+}
 $executable = Join-Path $output "test_application_logic.exe"
 $lockExecutable = Join-Path $output "test_gimbal_motion_lock.exe"
 $sources = @(
