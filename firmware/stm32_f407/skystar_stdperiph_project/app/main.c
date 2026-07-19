@@ -13,6 +13,7 @@
  */
 #include "board.h"
 #include "bsp_uart.h"
+#include "skystar_oled.h"
 #include "vision_ascii_protocol.h"
 #include <stdio.h>
 
@@ -41,6 +42,53 @@ static void print_0p1(int32_t value)
 	printf("%ld.%ld", (long)(value / 10), (long)(value % 10));
 }
 
+static void format_0p1(char *buffer, uint32_t size, int32_t value)
+{
+	if (value < 0) {
+		snprintf(buffer, size, "-%ld.%ld", (long)(-value / 10), (long)(-value % 10));
+	} else {
+		snprintf(buffer, size, "%ld.%ld", (long)(value / 10), (long)(value % 10));
+	}
+}
+
+static void oled_show_waiting(void)
+{
+	SkystarOled_ShowLine(0U, "SKYSTAR F407");
+	SkystarOled_ShowLine(1U, "WAIT VISION");
+	SkystarOled_ShowLine(2U, "USART2 PA2 PA3");
+	SkystarOled_ShowLine(3U, "115200 8N1");
+}
+
+static void oled_show_result(const VisionAscii_Result *result, uint8_t connected)
+{
+	char line[32];
+	char angle[16];
+	char distance[16];
+
+	format_0p1(angle, sizeof(angle), result->angle_0p1deg);
+	format_0p1(distance, sizeof(distance), result->distance_0p1cm);
+
+	snprintf(line, sizeof(line), "VISION %s", connected ? "OK" : "LOST");
+	SkystarOled_ShowLine(0U, line);
+
+	snprintf(line, sizeof(line), "CX %d CY %d", (int)result->cx, (int)result->cy);
+	SkystarOled_ShowLine(1U, line);
+
+	snprintf(line, sizeof(line), "A %s D %s", angle, distance);
+	SkystarOled_ShowLine(2U, line);
+
+	snprintf(line, sizeof(line), "SEQ %u M %u", (unsigned)result->sequence, (unsigned)result->mode);
+	SkystarOled_ShowLine(3U, line);
+}
+
+static void oled_show_timeout(void)
+{
+	SkystarOled_ShowLine(0U, "VISION TIMEOUT");
+	SkystarOled_ShowLine(1U, "NO VALID TARGET");
+	SkystarOled_ShowLine(2U, "CHECK MAIXCAM");
+	SkystarOled_ShowLine(3U, "OR USART2 INPUT");
+}
+
 void uart2_rx_callback(uint8_t data)
 {
 	(void)VisionAscii_InputByte(&g_vision_parser, data);
@@ -58,10 +106,12 @@ int main(void)
 	uart1_init(115200U);
 	uart2_init(115200U);
 	led_init();
+	SkystarOled_Init();
 	VisionAscii_Init(&g_vision_parser);
 
 	printf("\r\nSKYSTAR F407 VISION UART DEMO\r\n");
 	printf("DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, 115200 8N1\r\n");
+	oled_show_waiting();
 	
 	while(1)
 	{
@@ -88,6 +138,7 @@ int main(void)
 			printf("cm angle=");
 			print_0p1(result.angle_0p1deg);
 			printf("deg\r\n");
+			oled_show_result(&result, connected);
 		}
 
 		if (connected && (now_ms - last_frame_ms > VISION_ASCII_TIMEOUT_MS)) {
@@ -96,6 +147,9 @@ int main(void)
 
 		if (connected != last_connected) {
 			printf("VISION LINK %s\r\n", connected ? "CONNECTED" : "TIMEOUT");
+			if (!connected) {
+				oled_show_timeout();
+			}
 			last_connected = connected;
 		}
 

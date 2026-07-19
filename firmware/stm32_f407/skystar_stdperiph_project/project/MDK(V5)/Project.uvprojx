@@ -340,7 +340,7 @@
               <MiscControls>-Wno-invalid-utf8</MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx,</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\app;..\..\board;..\..\bsp;..\..\libraries\CMSIS\Include;..\..\libraries\CMSIS\Device\ST\STM32F4xx\Include;..\..\libraries\STM32F4xx_StdPeriph_Driver\inc;..\..\module;..\..\bsp\uart</IncludePath>
+              <IncludePath>..\..\app;..\..\board;..\..\bsp;..\..\libraries\CMSIS\Include;..\..\libraries\CMSIS\Device\ST\STM32F4xx\Include;..\..\libraries\STM32F4xx_StdPeriph_Driver\inc;..\..\module;..\..\bsp\uart;..\..\bsp\oled</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -423,6 +423,11 @@
               <FileName>bsp_uart.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\bsp\uart\bsp_uart.c</FilePath>
+            </File>
+            <File>
+              <FileName>skystar_oled.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\bsp\oled\skystar_oled.c</FilePath>
             </File>
           </Files>
         </Group>

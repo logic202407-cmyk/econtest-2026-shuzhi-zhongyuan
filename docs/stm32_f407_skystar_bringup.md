@@ -22,6 +22,37 @@ files into it.
 | Debug printf | USART1 | PA9 TX / PA10 RX | 115200 8N1 |
 | MaixCAM fake input | USART2 | PA2 TX / PA3 RX | 115200 8N1 |
 
+## OLED Map
+
+The backup project now supports the 0.91 inch 4-pin white I2C OLED module
+with an SSD1306-compatible controller.
+
+Default wiring:
+
+```text
+OLED VCC -> Skystar 3V3
+OLED GND -> Skystar GND
+OLED SCL -> Skystar PB8
+OLED SDA -> Skystar PB9
+```
+
+The driver uses software I2C, so it does not require extra Keil peripheral
+configuration. The default I2C write address is `0x78`, which corresponds to
+the common 7-bit OLED address `0x3C`.
+
+Expected OLED pages after reset:
+
+```text
+SKYSTAR F407
+WAIT VISION
+USART2 PA2 PA3
+115200 8N1
+```
+
+After a valid or lost MaixCAM frame arrives, the OLED shows the current vision
+state, `cx/cy`, angle, distance, sequence number, and mode. If the link times
+out, it shows `VISION TIMEOUT`.
+
 On the Skystar board bottom debug header, the debug UART is marked as `TX`,
 `RX`, and `GND`.
 
