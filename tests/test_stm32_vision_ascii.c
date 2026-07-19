@@ -53,6 +53,28 @@ static void test_legacy_fake_data(void)
     assert(result.valid == 1U);
 }
 
+static void test_lost_frames(void)
+{
+    VisionAscii_Parser parser;
+    VisionAscii_Result result;
+
+    VisionAscii_Init(&parser);
+    assert(feed(&parser, "$V,0,320,240,80,80,150.0,8.0,0.0,0.10#"));
+    assert(VisionAscii_TakeResult(&parser, &result));
+    assert(result.mode == 0U);
+    assert(result.valid == 0U);
+
+    assert(feed(&parser, "$V,1,320,240,80,80,150.0,8.0,0.0,0.49#"));
+    assert(VisionAscii_TakeResult(&parser, &result));
+    assert(result.mode == 1U);
+    assert(result.valid == 0U);
+
+    assert(feed(&parser, "$V,1,26,0,322,239,82,79,1498,81,12,1#"));
+    assert(VisionAscii_TakeResult(&parser, &result));
+    assert(result.mode == 0U);
+    assert(result.valid == 0U);
+}
+
 static void test_resync_and_bad_frame(void)
 {
     VisionAscii_Parser parser;
@@ -73,6 +95,7 @@ int main(void)
 {
     test_v1_frame();
     test_legacy_fake_data();
+    test_lost_frames();
     test_resync_and_bad_frame();
     return 0;
 }

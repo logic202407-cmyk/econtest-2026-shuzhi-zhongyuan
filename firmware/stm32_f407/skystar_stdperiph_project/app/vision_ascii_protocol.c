@@ -127,7 +127,7 @@ static uint8_t parse_v1(char *fields[], uint8_t count, VisionAscii_Result *resul
     if (!parse_i32(fields[10], -32768, 32767, &value_i32)) return 0U;
     result->angle_0p1deg = (int16_t)value_i32;
     if (!parse_u32(fields[11], 1U, &value_u32)) return 0U;
-    result->valid = (uint8_t)value_u32;
+    result->valid = (result->mode != 0U && value_u32 != 0U) ? 1U : 0U;
 
     return 1U;
 }
@@ -158,7 +158,7 @@ static uint8_t parse_legacy(char *fields[], uint8_t count, VisionAscii_Result *r
     if (!parse_decimal_0p1(fields[8], &value_i32)) return 0U;
     result->angle_0p1deg = (int16_t)value_i32;
     if (!parse_decimal_0p1(fields[9], &value_i32)) return 0U;
-    result->valid = (value_i32 > 0) ? 1U : 0U;
+    result->valid = (result->mode != 0U && value_i32 >= 5) ? 1U : 0U;
 
     return 1U;
 }
