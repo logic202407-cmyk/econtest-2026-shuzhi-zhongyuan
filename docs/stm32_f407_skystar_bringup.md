@@ -160,6 +160,65 @@ Verified on board:
 - Different `cx/cy/w/h/distance/size/angle` values are parsed correctly.
 - `mode=0` or low confidence is treated as target lost after the parser fix.
 
+## 2026-07-19 Board Test Log
+
+Hardware used:
+
+- Skystar STM32F407VET6 board
+- ST-Link/V2 for flashing
+- USB-SERIAL CH340 USB-TTL for UART testing
+- SSCOM at `115200 8N1`
+
+Connections:
+
+```text
+USB-TTL RXD -> Skystar TX  / USART1_TX
+USB-TTL TXD -> Skystar PA3 / USART2_RX
+USB-TTL GND -> Skystar GND
+```
+
+Boot output after pressing reset:
+
+```text
+SKYSTAR F407 VISION UART DEMO
+DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, 115200 8N1
+```
+
+Normal target frame:
+
+```text
+$V,1,100,200,60,40,120.0,6.5,-12.3,0.88#
+```
+
+Observed output:
+
+```text
+VISION OK seq=22 mode=1 cx=100 cy=200 w=60 h=40 dist=120.0cm size=6.5cm angle=-12.3deg
+VISION LINK CONNECTED
+VISION LINK TIMEOUT
+```
+
+Target-lost frame:
+
+```text
+$V,0,320,240,80,80,150.0,8.0,0.0,0.10#
+```
+
+Observed output after parser fix:
+
+```text
+VISION LOST seq=1 mode=0 cx=320 cy=240 w=80 h=80 dist=150.0cm size=8.0cm angle=0.0deg
+VISION LOST seq=2 mode=0 cx=320 cy=240 w=80 h=80 dist=150.0cm size=8.0cm angle=0.0deg
+VISION LOST seq=3 mode=0 cx=320 cy=240 w=80 h=80 dist=150.0cm size=8.0cm angle=0.0deg
+VISION LOST seq=4 mode=0 cx=320 cy=240 w=80 h=80 dist=150.0cm size=8.0cm angle=0.0deg
+```
+
+Conclusion:
+
+- The STM32F407 backup UART demo is board-verified.
+- The `mode=0` lost-target rule works on hardware.
+- The next STM32F407 backup tasks can move to OLED, key input, and PWM output.
+
 ## Next Steps
 
 After this UART demo is stable, Kai can continue with:
