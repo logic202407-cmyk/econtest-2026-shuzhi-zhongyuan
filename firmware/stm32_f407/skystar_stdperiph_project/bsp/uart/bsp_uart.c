@@ -15,6 +15,10 @@
 #include "bsp_uart.h" 
 #include "stdio.h"
 
+#ifndef __weak
+#define __weak __attribute__((weak))
+#endif
+
 void uart1_init(uint32_t __Baud)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;	
