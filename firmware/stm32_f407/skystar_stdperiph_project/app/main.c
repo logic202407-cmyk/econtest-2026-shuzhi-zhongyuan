@@ -15,6 +15,7 @@
 #include "bsp_uart.h"
 #include "skystar_key.h"
 #include "skystar_oled.h"
+#include "skystar_x42s.h"
 #include "vision_ascii_protocol.h"
 #include <stdio.h>
 
@@ -100,6 +101,11 @@ void uart2_rx_callback(uint8_t data)
 	(void)VisionAscii_InputByte(&g_vision_parser, data);
 }
 
+void uart3_rx_callback(uint8_t data)
+{
+	SkystarX42S_OnRxByte(data);
+}
+
 int main(void)
 {
 	VisionAscii_Result result;
@@ -115,10 +121,11 @@ int main(void)
 	led_init();
 	SkystarKey_Init();
 	SkystarOled_Init();
+	SkystarX42S_Init();
 	VisionAscii_Init(&g_vision_parser);
 
 	printf("\r\nSKYSTAR F407 VISION UART DEMO\r\n");
-	printf("DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, KEY: PA0, OLED: PB8/PB9, 115200 8N1\r\n");
+	printf("DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, X42S: USART3 PB10/PB11, KEY: PA0, OLED: PB8/PB9, 115200 8N1\r\n");
 	oled_show_waiting(key_count);
 	
 	while(1)
@@ -132,6 +139,10 @@ int main(void)
 		if (SkystarKey_Update(now_ms) != 0U) {
 			key_count++;
 			printf("KEY PRESS count=%lu\r\n", (unsigned long)key_count);
+			SkystarX42S_ReadPosition(SKYSTAR_X42S_DEFAULT_ID);
+			printf("X42S READ POSITION id=%u last=%ld(0.1deg)\r\n",
+			       (unsigned)SKYSTAR_X42S_DEFAULT_ID,
+			       (long)SkystarX42S_GetLastPosition(SKYSTAR_X42S_DEFAULT_ID));
 			if (got_frame) {
 				/* The fresh frame below will refresh the OLED. */
 			} else if (connected) {

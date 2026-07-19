@@ -21,6 +21,46 @@ files into it.
 | --- | --- | --- | --- |
 | Debug printf | USART1 | PA9 TX / PA10 RX | 115200 8N1 |
 | MaixCAM fake input | USART2 | PA2 TX / PA3 RX | 115200 8N1 |
+| X42S RS485 backup | USART3 | PB10 TX / PB11 RX | 115200 8N1 |
+
+## X42S RS485 Map
+
+The Skystar backup project now prepares the same X42S X-firmware free-protocol
+path as the Tianmengxing main project. It uses the default X42S free protocol:
+
+- baud: `115200`
+- data: `8N1`
+- check byte: fixed `0x6B`
+- protocol: X firmware free protocol, not MODBUS
+
+Default wiring for the automatic-direction TTL-RS485 module:
+
+```text
+Skystar PB10 / USART3_TX -> RS485 module TXD
+Skystar PB11 / USART3_RX <- RS485 module RXD
+Skystar GND              -> RS485 module GND
+Skystar 3V3              -> RS485 module VCC
+RS485 A+                 -> X42S A+
+RS485 B-                 -> X42S B-
+```
+
+`PB12` is initialized as an optional RS485 direction pin for manual-direction
+modules:
+
+```text
+PB12 = 0: receive
+PB12 = 1: transmit
+```
+
+If the RS485 module is automatic-direction, leave `PB12` disconnected.
+
+Safety behavior:
+
+- The firmware initializes X42S communication but does not enable or move the
+  motor automatically.
+- Pressing the Skystar `KEY` only sends a read-position command to motor ID `1`.
+- Movement commands exist in code for later use, but should not be called until
+  motor ID, direction, current limit, and mechanical range are confirmed.
 
 ## Key Map
 
@@ -143,10 +183,10 @@ SKYSTAR F407 VISION UART DEMO
 DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, 115200 8N1
 ```
 
-Newer firmware builds include the key and OLED map in the second line:
+Newer firmware builds include the key, OLED, and X42S map in the second line:
 
 ```text
-DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, KEY: PA0, OLED: PB8/PB9, 115200 8N1
+DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, X42S: USART3 PB10/PB11, KEY: PA0, OLED: PB8/PB9, 115200 8N1
 ```
 
 If the text is garbled, check the baud rate first. A common mistake is leaving
