@@ -13,6 +13,7 @@
  */
 #include "board.h"
 #include "bsp_uart.h"
+#include "skystar_key.h"
 #include "skystar_oled.h"
 #include "vision_ascii_protocol.h"
 #include <stdio.h>
@@ -51,15 +52,17 @@ static void format_0p1(char *buffer, uint32_t size, int32_t value)
 	}
 }
 
-static void oled_show_waiting(void)
+static void oled_show_waiting(uint32_t key_count)
 {
 	SkystarOled_ShowLine(0U, "SKYSTAR F407");
 	SkystarOled_ShowLine(1U, "WAIT VISION");
 	SkystarOled_ShowLine(2U, "USART2 PA2 PA3");
-	SkystarOled_ShowLine(3U, "115200 8N1");
+	char line[32];
+	snprintf(line, sizeof(line), "KEY %lu 115200", (unsigned long)key_count);
+	SkystarOled_ShowLine(3U, line);
 }
 
-static void oled_show_result(const VisionAscii_Result *result, uint8_t connected)
+static void oled_show_result(const VisionAscii_Result *result, uint8_t connected, uint32_t key_count)
 {
 	char line[32];
 	char angle[16];
@@ -77,16 +80,19 @@ static void oled_show_result(const VisionAscii_Result *result, uint8_t connected
 	snprintf(line, sizeof(line), "A %s D %s", angle, distance);
 	SkystarOled_ShowLine(2U, line);
 
-	snprintf(line, sizeof(line), "SEQ %u M %u", (unsigned)result->sequence, (unsigned)result->mode);
+	snprintf(line, sizeof(line), "SEQ %u KEY %lu", (unsigned)result->sequence, (unsigned long)key_count);
 	SkystarOled_ShowLine(3U, line);
 }
 
-static void oled_show_timeout(void)
+static void oled_show_timeout(uint32_t key_count)
 {
+	char line[32];
+
 	SkystarOled_ShowLine(0U, "VISION TIMEOUT");
 	SkystarOled_ShowLine(1U, "NO VALID TARGET");
 	SkystarOled_ShowLine(2U, "CHECK MAIXCAM");
-	SkystarOled_ShowLine(3U, "OR USART2 INPUT");
+	snprintf(line, sizeof(line), "KEY %lu", (unsigned long)key_count);
+	SkystarOled_ShowLine(3U, line);
 }
 
 void uart2_rx_callback(uint8_t data)
@@ -101,17 +107,19 @@ int main(void)
 	uint32_t last_frame_ms = 0U;
 	uint8_t connected = 0U;
 	uint8_t last_connected = 0U;
+	uint32_t key_count = 0U;
 
 	board_init();
 	uart1_init(115200U);
 	uart2_init(115200U);
 	led_init();
+	SkystarKey_Init();
 	SkystarOled_Init();
 	VisionAscii_Init(&g_vision_parser);
 
 	printf("\r\nSKYSTAR F407 VISION UART DEMO\r\n");
-	printf("DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, 115200 8N1\r\n");
-	oled_show_waiting();
+	printf("DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, KEY: PA0, OLED: PB8/PB9, 115200 8N1\r\n");
+	oled_show_waiting(key_count);
 	
 	while(1)
 	{
@@ -120,6 +128,18 @@ int main(void)
 		__disable_irq();
 		got_frame = VisionAscii_TakeResult(&g_vision_parser, &result);
 		__enable_irq();
+
+		if (SkystarKey_Update(now_ms) != 0U) {
+			key_count++;
+			printf("KEY PRESS count=%lu\r\n", (unsigned long)key_count);
+			if (got_frame) {
+				/* The fresh frame below will refresh the OLED. */
+			} else if (connected) {
+				SkystarOled_ShowLine(3U, "KEY PRESSED");
+			} else {
+				oled_show_timeout(key_count);
+			}
+		}
 
 		if (got_frame) {
 			last_frame_ms = now_ms;
@@ -138,7 +158,7 @@ int main(void)
 			printf("cm angle=");
 			print_0p1(result.angle_0p1deg);
 			printf("deg\r\n");
-			oled_show_result(&result, connected);
+			oled_show_result(&result, connected, key_count);
 		}
 
 		if (connected && (now_ms - last_frame_ms > VISION_ASCII_TIMEOUT_MS)) {
@@ -148,7 +168,7 @@ int main(void)
 		if (connected != last_connected) {
 			printf("VISION LINK %s\r\n", connected ? "CONNECTED" : "TIMEOUT");
 			if (!connected) {
-				oled_show_timeout();
+				oled_show_timeout(key_count);
 			}
 			last_connected = connected;
 		}

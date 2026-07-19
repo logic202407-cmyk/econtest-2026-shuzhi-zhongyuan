@@ -22,6 +22,23 @@ files into it.
 | Debug printf | USART1 | PA9 TX / PA10 RX | 115200 8N1 |
 | MaixCAM fake input | USART2 | PA2 TX / PA3 RX | 115200 8N1 |
 
+## Key Map
+
+The on-board user key follows the official LCKFB `006按键点灯` example:
+
+| Function | Pin | Electrical state |
+| --- | --- | --- |
+| User KEY | PA0 | Pulldown input, pressed = high level |
+
+When the key is pressed, the debug UART prints:
+
+```text
+KEY PRESS count=1
+```
+
+The OLED fourth line also shows the key count, so the key can be verified
+without watching the serial terminal all the time.
+
 ## OLED Map
 
 The backup project now supports the 0.91 inch 4-pin white I2C OLED module
@@ -124,6 +141,12 @@ Expected output:
 ```text
 SKYSTAR F407 VISION UART DEMO
 DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, 115200 8N1
+```
+
+Newer firmware builds include the key and OLED map in the second line:
+
+```text
+DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, KEY: PA0, OLED: PB8/PB9, 115200 8N1
 ```
 
 If the text is garbled, check the baud rate first. A common mistake is leaving
