@@ -9,6 +9,8 @@ application logic. It verifies:
 - Gimbal target-loss stop behavior and yaw/pitch limit clamping.
 - Default gimbal motion lock: initialization disables both motors and valid
   vision frames do not generate position commands.
+- STM32F407 Skystar standard-library ASCII vision parser compatibility with
+  V1 frames, early MaixCAM fake data, and resynchronization after bad input.
 
 Run it from the repository root on a Windows machine with either Visual Studio
 Build Tools (`cl.exe`) or GCC (`gcc.exe`) available:

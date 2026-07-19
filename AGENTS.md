@@ -12,6 +12,7 @@
 6. `firmware/mspm0g3507/tianmengxing/VALIDATION.md`
 7. `docs/first_board_bringup.md`
 8. `docs/gimbal_parameter_confirmation.md`
+9. `docs/stm32_f407_skystar_bringup.md`
 
 ## 当前主线任务
 
@@ -59,6 +60,19 @@ powershell -ExecutionPolicy Bypass -File .\tools\build_keil_project.ps1 `
 ```
 
 如果队友只是打开仓库内已有完整工程编译，不需要先执行这条命令。
+
+STM32F407 天空星备用工程入口：
+
+```text
+firmware/stm32_f407/skystar_stdperiph_project/project/MDK(V5)/Project.uvprojx
+```
+
+该工程基于立创天空星 STM32F407VET6 标准库模板，当前用于先验证
+MaixCAM ASCII 假数据接收链路。说明见：
+
+```text
+docs/stm32_f407_skystar_bringup.md
+```
 
 ## 硬件资源冻结
 
@@ -150,4 +164,3 @@ python .\tools\serial_debug\serial_debug.py x42s scenario safe-check `
 - Yaw/Pitch 电机 ID、正方向、零点、软限位仍需实物确认。
 
 硬件到位后，按 `docs/first_board_bringup.md` 的顺序做，不要第一次就全系统一起接。
-
