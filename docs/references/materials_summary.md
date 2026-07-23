@@ -2,7 +2,7 @@
 
 ## 项目链路
 
-`MaixCAM Pro -> UART1 -> MSPM0G3507 -> UART2 + 自动方向 RS485 -> X42S`
+`MaixCAM Pro -> UART1 -> MSPM0G3507 -> UART3 + 自动方向 RS485 -> X42S`
 
 ## 分工与必读资料
 
@@ -18,13 +18,13 @@
 | --- | --- | --- |
 | 调试串口 | UART0，PA10/PA11 | 板载 CH340E，禁止占用 |
 | 视觉通信 | UART1，PA8/PA9 | MaixCAM：A19 TX -> PA9，A18 RX <- PA8，3.3 V TTL、共地 |
-| 电机通信 | UART2，PB15/PB16 | PB15 TX -> RS485 TXD，PB16 RX <- RS485 RXD |
-| RS485 方向 | 自动方向模块 | 当前不接 PB17；PB17 仅预留给手动 DE/RE 模块 |
+| 电机通信 | UART3，B12/B13 | B12 TX -> RS485 TXD，B13 RX <- RS485 RXD |
+| RS485 方向 | 自动方向模块 | 当前不接 B14；B14 仅预留给手动 DE/RE 模块 |
 | 板载资源 | PB22 / PB21 | LED / 低电平有效按键 |
 
 ## X42S 关键结论
 
-- 当前使用 X 固件自由协议，默认 `115200 8N1`、固定校验字节 `0x6B`。
+- 当前实测使用 Emm 固件自由协议，默认 `115200 8N1`、固定校验字节 `0x6B`。
 - 上电前确认电机屏幕中的固件类型、站号、波特率和供电范围。
 - 详细帧格式与控制接口见 `docs/x42s_rs485_analysis.md`。
 

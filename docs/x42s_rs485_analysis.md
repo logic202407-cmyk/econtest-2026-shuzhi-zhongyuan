@@ -4,10 +4,10 @@
 
 ## 一、X42S通信方式
 
-X42S 支持 TTL / RS232 / RS485 / CAN 通讯。我们接入 MSPM0G3507 天猛星时，建议使用 RS485 物理层 + X 固件默认自由协议。
+X42S 支持 TTL / RS232 / RS485 / CAN 通讯。当前手头电机实测使用 RS485 物理层 + Emm 固件自由协议。
 
 - 物理层：RS485 半双工总线，主控 UART 需要外接 RS485 收发器。
-- 主控侧：项目规划使用 UART2，PB15 TX，PB16 RX；PB17 可作为 RS485 DE/RE 方向控制。资料包内 TI MSPM0G3507 例程使用 `UART0 / PA10 / PA11`，该例程的发送接口可参考，但本项目 UART0 已固定为调试口。
+- 主控侧：项目规划使用 UART3，B12 TX，B13 RX；B14 可作为 RS485 DE/RE 方向控制。资料包内 TI MSPM0G3507 例程使用 `UART0 / PA10 / PA11`，该例程的发送接口可参考，但本项目 UART0 已固定为调试口。
 - 默认波特率：115200。
 - 数据格式：8 数据位、无校验、1 停止位。
 - 默认协议：自由协议，校验字节固定为 `0x6B`。
@@ -87,7 +87,7 @@ STM32 HAL 串口例程结构：
 
 MSPM0 官方例程关键信息：
 
-- `empty.syscfg` 配置 `UART0`、`PA10 TX`、`PA11 RX`、115200；本项目迁移时改用 `UART2`、`PB15 TX`、`PB16 RX`。
+- `empty.syscfg` 配置 `UART0`、`PA10 TX`、`PA11 RX`、115200；本项目迁移时改用 `UART3`、`B12 TX`、`B13 RX`。
 - `ti_msp_dl_config.c` 配置 8 数据位、无校验、1 停止位。
 - `bsp/usart.c` 通过 `DL_UART_Main_transmitData()` 逐字节发送，通过 UART RX 中断入 FIFO。
 - `bsp/X_V2.c` 已把 STM32 的 `HAL_UART_Transmit_DMA()` 替换为 `usart_SendCmd()`。
@@ -107,21 +107,26 @@ application/motor/x42s_rs485/
 - 驱动层只负责组 X42S 自由协议帧，不直接绑定某个 UART 外设。
 - 驱动支持 `X42S_SetPortOps()` 注入发送与方向控制回调；未注入时兼容弱符号 `X42S_PortSend()` / `X42S_PortSetTxEnable()`。两种方式都不把驱动绑定到具体 UART。
 - 天猛星平台回调使用 `MOTOR_UART_INDEX / MOTOR_UART_TX_PIN / MOTOR_UART_RX_PIN`，方向控制使用 `RS485_DE_PIN`。
-- 发送回调必须在 UART2 最后一个字节真正发送完成后才返回；驱动在回调返回后立即将 DE/RE 切回接收态，避免 PB17 过早拉低截断帧尾。
-- 硬件资源统一从 `application/config/app_config.h` 获取，业务代码禁止直接散写 `PB15`、`PB16`、`PB17`。
+- 发送回调必须在 UART3 最后一个字节真正发送完成后才返回；驱动在回调返回后立即将 DE/RE 切回接收态，避免 B14 过早拉低截断帧尾。
+- 硬件资源统一从 `application/config/app_config.h` 获取，业务代码禁止直接散写 `B12`、`B13`、`B14`。
 - 当前已提供使能、失能、位置、速度、停止、读位置接口；后续硬件跑通后再补完整回零、读速度、同步控制和 Modbus-RTU。
 
 接线建议：
 
-- MSPM0G3507 PB15 / UART2 TX -> RS485 模块 DI。
-- MSPM0G3507 PB16 / UART2 RX <- RS485 模块 RO。
-- MSPM0G3507 PB17 / GPIO -> RS485 模块 DE/RE，若模块没有自动方向控制。
+- MSPM0G3507 B12 / UART3 TX -> RS485 模块 DI。
+- MSPM0G3507 B13 / UART3 RX <- RS485 模块 RO。
+- MSPM0G3507 B14 / GPIO -> RS485 模块 DE/RE，若模块没有自动方向控制。
 - RS485 A/B -> X42S RS485 A/B，GND 共地。
 
 下一步硬件验证：
 
 1. 确认 X42S 菜单中串口波特率为 115200，通讯校验方式为自由协议固定 `0x6B`。
 2. 用 USB-RS485 工具先发 `01 F3 AB 00 00 6B`，确认电机返回应答并失能。
-3. 天猛星 UART2 发送同一帧，逻辑分析仪确认 TX 字节和 DE/RE 时序。
+3. 天猛星 UART3 发送同一帧，逻辑分析仪确认 TX 字节和 DE/RE 时序。
 4. 接收返回帧后再测试 `01 0F 6B` 读取实时位置。
 5. 最后测试低速速度模式和小角度位置模式，避免首次上电大幅运动。
+# 实测勘误：当前电机使用 Emm 固件
+
+2026-07-23 使用 USB-RS485 实测确认：手头 X42S 默认使用 **Emm 固件自由协议**，不是本文早期假设的 X 固件自由协议。已验证命令、帧格式和接线见 `docs/x42s_emm_commissioning.md`。
+
+后续主控代码以 Emm 固件为准：读速度 `01 35 6B`，读位置 `01 36 6B`，速度模式 `F6`，位置模式 `FD`。本文以下早期分析中关于 X 固件 `0x0E/0x0F` 读速度/读位置的内容仅作为历史记录保留，不再作为当前工程实现依据。

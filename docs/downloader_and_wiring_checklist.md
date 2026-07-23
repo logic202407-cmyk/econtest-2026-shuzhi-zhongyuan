@@ -62,18 +62,18 @@ UART0 固定作为调试串口，115200 8N1。上板后预期看到 `APP,INIT`�
 
 默认 115200 8N1。没有 MaixCAM 时，可先用 USB-TTL 向 UART1 发送仓库工具生成的假视觉帧。
 
-### UART2 接 RS485 模块
+### UART3 接 RS485 模块
 
 | 天猛星 | TTL-RS485 模块 |
 | --- | --- |
-| PB15 / UART2 TX | RXD |
-| PB16 / UART2 RX | TXD |
+| B12 / UART3 TX | RXD |
+| B13 / UART3 RX | TXD |
 | GND | GND |
 | 3.3V | VCC，若模块支持 3.3V |
 
-如果使用自动方向 RS485 模块，PB17 可不接。若使用普通半双工 RS485 收发器，将 DE 和 `/RE` 短接后接 PB17：
+如果使用自动方向 RS485 模块，B14 可不接。若使用普通半双工 RS485 收发器，将 DE 和 `/RE` 短接后接 B14：
 
-| PB17 | 状态 |
+| B14 | 状态 |
 | --- | --- |
 | 0 | 接收 |
 | 1 | 发送 |
@@ -89,7 +89,7 @@ UART0 固定作为调试串口，115200 8N1。上板后预期看到 `APP,INIT`�
 若通信无响应，优先检查：
 
 - A/B 是否接反。
-- X42S 是否为 X 固件自由协议。
+- X42S 是否为 Emm 固件自由协议。
 - 波特率是否为 115200。
 - 校验是否为固定 `0x6B`。
 - 电机 ID 是否与 `application/config/app_config.h` 一致。
@@ -102,4 +102,3 @@ UART0 固定作为调试串口，115200 8N1。上板后预期看到 `APP,INIT`�
 4. 用 USB-RS485 单独测试一个 X42S，确认 ID、方向、零点。
 5. 保持 `GIMBAL_MOTION_ENABLED == 0U`，让天猛星接入 RS485，确认启动时只发送失能命令。
 6. 填完 `docs/gimbal_parameter_confirmation.md` 后，再解锁小角度单轴运动。
-

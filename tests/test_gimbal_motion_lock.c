@@ -40,8 +40,8 @@ static void feed_target(MaixCAM_Parser *parser)
 int main(void)
 {
     static const X42S_PortOps ops = {mock_send, mock_set_tx_enable};
-    const uint8_t yaw_disable[] = {0x01U, 0xF3U, 0xABU, 0x00U, 0x00U, 0x6BU};
-    const uint8_t pitch_disable[] = {0x02U, 0xF3U, 0xABU, 0x00U, 0x00U, 0x6BU};
+    const uint8_t yaw_disable[] = {0x02U, 0xF3U, 0xABU, 0x00U, 0x00U, 0x6BU};
+    const uint8_t pitch_disable[] = {0x01U, 0xF3U, 0xABU, 0x00U, 0x00U, 0x6BU};
     MaixCAM_Parser parser;
     Gimbal_Control gimbal;
 

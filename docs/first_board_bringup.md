@@ -17,7 +17,7 @@
 | 下载器 | XDS110 通过 SWD 连接 PA19、PA20、GND、3.3V VTref | 待填写 |
 | 调试串口 | CH340E/Type-C 枚举正常，UART0 使用 115200 8N1 | 待填写 |
 | MaixCAM | UART1：PA8 TX 到 MaixCAM RX，PA9 RX 到 MaixCAM TX，共地 | 待填写 |
-| RS485 | UART2：PB15 TX 到模块 TXD，PB16 RX 到模块 RXD；A/B 无反接 | 待填写 |
+| RS485 | UART3：B12 TX 到模块 TXD，B13 RX 到模块 RXD；A/B 无反接 | 待填写 |
 | 电源 | 主控、RS485 和 X42S 的供电满足规格且共地 | 待填写 |
 | 初始安全状态 | `GIMBAL_MOTION_ENABLED == 0U` | 待填写 |
 
@@ -52,7 +52,7 @@ python .\tools\serial_debug\serial_debug.py maixcam target `
 ## 3. 单个 X42S 基础验证
 
 1. 先用 USB-RS485 和 PC 单独连接一个 X42S，不接主控。
-2. 确认电机为 X 固件、115200 8N1、自由协议固定校验 `0x6B`。
+2. 确认电机为 Emm 固件、115200 8N1、自由协议固定校验 `0x6B`。
 3. 确认实际 ID，先发送失能、读取位置等非运动命令。
 4. 在确认周围无干涉后，使用低速、小角度命令测试 `+5 deg`、`-5 deg`。
 5. 将实际 ID、正方向和零点记录到云台参数确认表。
@@ -61,9 +61,9 @@ python .\tools\serial_debug\serial_debug.py maixcam target `
 
 ## 4. 天猛星接入单轴 X42S
 
-1. 保持 `GIMBAL_MOTION_ENABLED == 0U`，连接 UART2 和 RS485 模块。
+1. 保持 `GIMBAL_MOTION_ENABLED == 0U`，连接 UART3 和 RS485 模块。
 2. 下载程序并确认启动后电机处于失能状态。
-3. 检查 UART2 的 A/B 极性、共地和供电；需要时用逻辑分析仪确认 115200 波形。
+3. 检查 UART3 的 A/B 极性、共地和供电；需要时用逻辑分析仪确认 115200 波形。
 4. 完成单轴零点、正方向及软限位标定后，填写参数确认表。
 
 验收：锁定态只失能、不发送位置命令；通信无干扰 UART0/UART1。
@@ -75,7 +75,7 @@ python .\tools\serial_debug\serial_debug.py maixcam target `
 1. 复核 `GIMBAL_YAW_*`、`GIMBAL_PITCH_*` 限位值均在机械硬限位内。
 2. 将 `GIMBAL_MOTION_ENABLED` 改为 `1U`，保持当前保守速度、加速度和步进限幅。
 3. 只连接一个轴，从 `+5 deg`、`-5 deg` 开始观察方向和运动平稳性。
-4. 再连接第二轴，分别确认 Yaw 和 Pitch，不做高速或大角度联动。
+4. 再连接第二轴，分别确认 Pitch(ID1) 和 Yaw(ID2)，不做高速或大角度联动。
 5. 最后接入 MaixCAM，先确认目标丢失 500 ms 后两个轴停止，再扩大跟踪范围。
 
 ## 6. 联调记录
