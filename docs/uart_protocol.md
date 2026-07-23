@@ -24,26 +24,26 @@ MaixCAM RX   <- 主控 TX
 
 MSPM0G3507 天猛星固定接线：
 
-| 链路 | 主控 UART | 主控 TX | 主控 RX | 外设 |
-| --- | --- | --- | --- | --- |
-| 调试日志 | UART0 | PA10 | PA11 | 板载 CH340E / Type-C |
-| MaixCAM | UART1 | PA8 | PA9 | MaixCAM Pro |
-| X42S RS485 | UART2 | PB15 | PB16 | RS485 收发器 |
+  链路   主控 UART   主控 TX   主控 RX   外设
+  ---   ---   ---   ---   ---
+  调试日志   UART0   PA10   PA11   板载 CH340E / Type-C
+  MaixCAM   UART1   PA8   PA9   MaixCAM Pro
+  X42S RS485   UART3   B12   B13   RS485 收发器
 
 MaixCAM 具体接线为 `MaixCAM TX -> PA9 / UART1 RX`，`MaixCAM RX <- PA8 / UART1 TX`。首阶段只接收视觉数据时，PA8 可先不接。UART0 只用于调试，禁止再外接 MaixCAM 或 X42S。
 
 ## 3. 串口参数
 
-| 参数 | MaixCAM UART1 统一值 |
-| --- | --- |
-| 波特率 | 115200 |
-| 数据位 | 8 |
-| 校验位 | None |
-| 停止位 | 1 |
-| 流控 | None |
-| 编码 | ASCII（早期联调协议） |
+  参数   MaixCAM UART1 统一值
+  ---   ---
+  波特率   115200
+  数据位   8
+  校验位   None
+  停止位   1
+  流控   None
+  编码   ASCII（早期联调协议）
 
-X42S RS485 使用 UART2，默认同为 `115200, 8N1`，但协议为二进制自由协议，不使用本文件的 `$...#` 帧格式；详见 `docs/x42s_rs485_analysis.md`。MSPM0G3507 的 MaixCAM 云台链路同样使用 `115200, 8N1`，但采用 `0xAA 0x55` 二进制帧，详见 `docs/maixcam_protocol.md`。
+X42S RS485 使用 UART3，默认同为 `115200, 8N1`，但协议为二进制自由协议，不使用本文件的 `$...#` 帧格式；详见 `docs/x42s_rs485_analysis.md`。MSPM0G3507 的 MaixCAM 云台链路同样使用 `115200, 8N1`，但采用 `0xAA 0x55` 二进制帧，详见 `docs/maixcam_protocol.md`。
 
 ## 4. 视觉数据帧 V1
 
@@ -61,22 +61,22 @@ $V,1,25,1,320,240,80,80,1500,80,0,1#
 
 ### 字段定义
 
-| 字段 | 类型 | 含义 | 单位/范围 |
-| --- | --- | --- | --- |
-| `$` | char | 帧头 | 固定 |
-| `V` | char | 视觉数据帧类型 | 固定 |
-| `ver` | uint8 | 协议版本 | 当前固定为 1 |
-| `seq` | uint16 | 帧序号，循环递增 | 0～65535 |
-| `mode` | uint8 | 当前识别模式 | 任务内约定 |
-| `cx` | int16 | 目标中心 x 坐标 | pixel |
-| `cy` | int16 | 目标中心 y 坐标 | pixel |
-| `w` | uint16 | 目标框宽度 | pixel |
-| `h` | uint16 | 目标框高度 | pixel |
-| `distance` | int32 | 目标距离 | 0.1 cm；1500 表示 150.0 cm |
-| `size` | int32 | 目标尺寸 | 0.1 cm；80 表示 8.0 cm |
-| `angle` | int16 | 目标角度 | 0.1°；-125 表示 -12.5° |
-| `valid` | uint8 | 本帧结果是否有效 | 0=无效，1=有效 |
-| `#` | char | 帧尾 | 固定 |
+  字段   类型   含义   单位/范围
+  ---   ---   ---   ---
+  `$`   char   帧头   固定
+  `V`   char   视觉数据帧类型   固定
+  `ver`   uint8   协议版本   当前固定为 1
+  `seq`   uint16   帧序号，循环递增   0～65535
+  `mode`   uint8   当前识别模式   任务内约定
+  `cx`   int16   目标中心 x 坐标   pixel
+  `cy`   int16   目标中心 y 坐标   pixel
+  `w`   uint16   目标框宽度   pixel
+  `h`   uint16   目标框高度   pixel
+  `distance`   int32   目标距离   0.1 cm；1500 表示 150.0 cm
+  `size`   int32   目标尺寸   0.1 cm；80 表示 8.0 cm
+  `angle`   int16   目标角度   0.1°；-125 表示 -12.5°
+  `valid`   uint8   本帧结果是否有效   0=无效，1=有效
+  `#`   char   帧尾   固定
 
 约束：
 
@@ -100,12 +100,12 @@ $C,1,8,SET_MODE,2#
 
 首阶段只要求实现以下命令：
 
-| cmd | param | 含义 |
-| --- | --- | --- |
-| `SET_MODE` | 模式编号 | 切换识别模式 |
-| `START` | 1 | 开始测量 |
-| `STOP` | 0 | 停止测量 |
-| `PING` | 任意整数 | 链路测试 |
+  cmd   param   含义
+  ---   ---   ---
+  `SET_MODE`   模式编号   切换识别模式
+  `START`   1   开始测量
+  `STOP`   0   停止测量
+  `PING`   任意整数   链路测试
 
 MaixCAM 收到 `PING` 后回复：
 

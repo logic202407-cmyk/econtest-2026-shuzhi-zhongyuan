@@ -13,6 +13,7 @@ typedef enum
 {
     PLATFORM_UART_DEBUG = 0,
     PLATFORM_UART_VISION,
+    PLATFORM_UART_TJC_SCREEN,
     PLATFORM_UART_MOTOR
 } Platform_Uart;
 

@@ -32,8 +32,7 @@ static int32_t calc_step_0p1deg(int16_t error_0p01deg,
         return 0;
     }
 
-    motor_error_0p1deg = ((int32_t)error_0p01deg *
-                          (int32_t)X42S_X_POSITION_UNITS_PER_DEG) /
+    motor_error_0p1deg = ((int32_t)error_0p01deg * 10) /
                          (int32_t)VISION_ANGLE_UNITS_PER_DEG;
     step_0p1deg = (motor_error_0p1deg * kp_num) / kp_den;
     return limit_step(step_0p1deg);

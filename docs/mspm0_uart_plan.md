@@ -10,13 +10,13 @@
 |-|-|-|-|-|-|
 | 调试日志 / Type-C CH340E | UART0 | PA10 | PA11 | 115200, 8N1 | 固定保留，不接外设 |
 | MaixCAM Pro | UART1 | PA8 | PA9 | 115200, 8N1, ASCII | MaixCAM TX 接 PA9；PA8 可选接 MaixCAM RX |
-| X42S RS485 | UART2 | PB15 | PB16 | 115200, 8N1, binary | PB15 -> RS485 DI，PB16 <- RS485 RO |
+| X42S RS485 | UART3 | B12 | B13 | 115200, 8N1, binary | B12 -> RS485 DI，B13 <- RS485 RO |
 
 建议 RS485 方向控制：
 
 | 信号 | 建议 GPIO | 说明 |
 |-|-|-|
-| DE/RE | PB17 | 手动方向 485 芯片预留；当前自动方向模块不连接 |
+| DE/RE | B14 | 手动方向 485 芯片预留；当前自动方向模块不连接 |
 
 如果使用自动收发方向的 RS485 模块，可不接 DE/RE。
 
@@ -26,7 +26,7 @@
 
 - UART0：`UART0_TX_A10` / `UART0_RX_A11`
 - UART1：`UART1_TX_A8` / `UART1_RX_A9`
-- UART2：`UART2_TX_B15` / `UART2_RX_B16`
+- UART3：`UART3_TX_B12` / `UART3_RX_B13`
 
 天猛星适配层已固定：
 
@@ -38,7 +38,7 @@
 - PA18：BSL。
 - PA3/PA4、PA5/PA6：晶振相关。
 
-逐飞资料还提示 A21、A23 等属于“尽量不要使用”的特殊功能脚，因此 UART2 不选 A21/A22 或 A23/A24 组合，优先选 PB15/PB16。
+X42S 使用 UART3 B12/B13，避开 B6-B9 板载 SPI Flash、B21 按键、B22 LED、A10/A11 调试口和 A19/A20 SWD。
 
 ## 接线方案
 
@@ -56,20 +56,20 @@ MaixCAM GND -> MSPM0 GND
 
 首阶段 MaixCAM 只发送视觉帧时，最小接线为 TX、GND、供电。若要让主控发送 `SET_MODE`、`PING` 等命令，再接 PA8 到 MaixCAM RX。
 
-### UART2 接 X42S RS485
+### UART3 接 X42S RS485
 
 ```text
-MSPM0 PB15 / UART2 TX -> RS485 DI
-MSPM0 PB16 / UART2 RX <- RS485 RO
-MSPM0 PB17 / GPIO     -> 手动方向 RS485 模块的 DE 与 /RE，可选
+MSPM0 B12 / UART3 TX -> RS485 DI
+MSPM0 B13 / UART3 RX <- RS485 RO
+MSPM0 B14 / GPIO     -> 手动方向 RS485 模块的 DE 与 /RE，可选
 MSPM0 GND             -> RS485 模块 GND
 RS485 A/B             -> X42S A/B
 ```
 
-当前采购的自动方向模块没有 DE/RE 引脚，PB17 不连接该模块。普通半双工 RS485 收发器建议把 DE 和 /RE 短接到 PB17：
+当前采购的自动方向模块没有 DE/RE 引脚，B14 不连接该模块。普通半双工 RS485 收发器建议把 DE 和 /RE 短接到 B14：
 
-- 接收态：PB17 = 0
-- 发送态：PB17 = 1
+- 接收态：B14 = 0
+- 发送态：B14 = 1
 - 每次发送完最后一个字节并确认 UART 不忙后，切回接收态
 
 ## 软件分层
@@ -78,14 +78,14 @@ RS485 A/B             -> X42S A/B
 |-|-|
 | UART0 debug | `printf`、状态日志、调试命令，不参与业务协议 |
 | UART1 vision | `$...#` ASCII 状态机，解析 `docs/uart_protocol.md` 的 V1 帧 |
-| UART2 motor | X42S 二进制自由协议，默认固定校验 `0x6B` |
+| UART3 motor | X42S 二进制自由协议，默认固定校验 `0x6B` |
 
 中断原则：
 
 - UART 中断只收字节、入环形缓冲或置完整帧标志。
 - MaixCAM 的逗号分割和数值转换放主循环。
 - X42S 的响应解析放主循环或轻量状态机，不在中断里控制电机。
-- UART0 日志输出不能阻塞 UART1/UART2 接收。
+- UART0 日志输出不能阻塞 UART1/UART3 接收。
 
 ## 初始化建议
 
@@ -97,8 +97,8 @@ debug_init(); // UART0 PA10/PA11, 115200
 uart_init(UART_1, 115200, UART1_TX_A8, UART1_RX_A9);
 uart_rx_interrupt(UART_1, 1);
 
-uart_init(UART_2, 115200, UART2_TX_B15, UART2_RX_B16);
-uart_rx_interrupt(UART_2, 1);
+uart_init(UART_3, 115200, UART3_TX_B12, UART3_RX_B13);
+uart_rx_interrupt(UART_3, 1);
 gpio_init(B17, GPO, GPIO_LOW, GPO_PUSH_PULL);
 ```
 
@@ -122,7 +122,7 @@ gpio_init(RS485_DE_PIN, GPO, GPIO_LOW, GPO_PUSH_PULL);
 
 | 风险 | 处理 |
 |-|-|
-| PB15/PB16 在实板排针位置不方便接线 | 当前冻结方案不直接改动；如实测接线不可行，需要重新确认硬件资源 |
-| PB17 被后续 PWM/舵机占用 | 当前冻结方案不允许占用；如必须调整，需要重新确认硬件资源 |
+| B12/B13 在实板排针位置不方便接线 | 当前冻结方案不直接改动；如实测接线不可行，需要重新确认硬件资源 |
+| B14 被后续 PWM/舵机占用 | 当前冻结方案不允许占用；如必须调整，需要重新确认硬件资源 |
 | MaixCAM 需要更高波特率 | UART1 可提高，但先保持 115200 完成第一阶段闭环 |
-| X42S 切到 Modbus-RTU | UART2 物理层不变，协议层改 CRC16 与 Modbus 帧 |
+| X42S 切到 Modbus-RTU | UART3 物理层不变，协议层改 CRC16 与 Modbus 帧 |

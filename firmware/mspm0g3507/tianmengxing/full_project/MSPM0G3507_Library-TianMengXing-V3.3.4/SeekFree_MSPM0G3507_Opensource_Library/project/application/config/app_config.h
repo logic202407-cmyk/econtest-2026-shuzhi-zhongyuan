@@ -119,6 +119,9 @@
 #define APP_VISION_RX_DEBUG_ENABLED      1U
 #define APP_VISION_TX_SELF_TEST_ENABLED  1U
 #define APP_VISION_TX_SELF_TEST_MS       1000U
+#define APP_MOTOR_RX_DEBUG_ENABLED       1U
+#define APP_X42S_KEY_TEST_ENABLED        1U
+#define APP_GIMBAL_RS485_TEST_BOOT_ENABLED 1U
 
 // X42S motor configuration.
 // Motor IDs, directions, zero points, and mechanical limits for the custom

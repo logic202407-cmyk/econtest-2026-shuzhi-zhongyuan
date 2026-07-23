@@ -66,8 +66,8 @@ UART0 固定作为调试串口，115200 8N1。上板后预期看到 `APP,INIT`�
 
 | 天猛星 | TTL-RS485 模块 |
 | --- | --- |
-| B12 / UART3 TX | RXD |
-| B13 / UART3 RX | TXD |
+| B12 / UART3 TX | TXD |
+| B13 / UART3 RX | RXD |
 | GND | GND |
 | 3.3V | VCC，若模块支持 3.3V |
 

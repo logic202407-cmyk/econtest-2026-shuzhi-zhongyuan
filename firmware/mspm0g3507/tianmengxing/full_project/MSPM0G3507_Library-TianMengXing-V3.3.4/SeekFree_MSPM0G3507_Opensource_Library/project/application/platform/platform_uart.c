@@ -12,6 +12,8 @@ static uart_index_enum platform_uart_index(Platform_Uart uart)
         return APP_DEBUG_UART_INDEX;
     case PLATFORM_UART_VISION:
         return APP_VISION_UART_INDEX;
+    case PLATFORM_UART_TJC_SCREEN:
+        return APP_TJC_UART_INDEX;
     case PLATFORM_UART_MOTOR:
     default:
         return APP_MOTOR_UART_INDEX;
@@ -25,6 +27,8 @@ static UART_Regs *platform_uart_regs(Platform_Uart uart)
         return APP_DEBUG_UART;
     case PLATFORM_UART_VISION:
         return APP_VISION_UART;
+    case PLATFORM_UART_TJC_SCREEN:
+        return APP_TJC_UART;
     case PLATFORM_UART_MOTOR:
     default:
         return APP_MOTOR_UART;
@@ -42,6 +46,11 @@ void platform_uart_init(Platform_Uart uart)
     case PLATFORM_UART_VISION:
         uart_init(APP_VISION_UART_INDEX, APP_VISION_UART_BAUDRATE,
                   APP_VISION_UART_TX_PIN, APP_VISION_UART_RX_PIN);
+        break;
+
+    case PLATFORM_UART_TJC_SCREEN:
+        uart_init(APP_TJC_UART_INDEX, APP_TJC_UART_BAUDRATE,
+                  APP_TJC_UART_TX_PIN, APP_TJC_UART_RX_PIN);
         break;
 
     case PLATFORM_UART_MOTOR:

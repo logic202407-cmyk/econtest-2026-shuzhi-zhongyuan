@@ -13,6 +13,7 @@
 7. `docs/first_board_bringup.md`
 8. `docs/gimbal_parameter_confirmation.md`
 9. `docs/stm32_f407_skystar_bringup.md`
+10. `docs/tianmengxing_expansion_pin_map.md`
 
 ## 当前主线任务
 
@@ -25,7 +26,7 @@ MaixCAM Pro
     v
 MSPM0G3507 天猛星
     |
-    | UART2 + RS485
+    | UART3 + RS485
     v
 X42S 闭环步进电机
     |
@@ -80,14 +81,17 @@ docs/stm32_f407_skystar_bringup.md
 
 | 功能 | 资源 |
 | --- | --- |
-| UART0 调试 | PA10 TX / PA11 RX，板载 CH340E + Type-C |
-| UART1 MaixCAM | PA8 TX / PA9 RX |
-| UART2 X42S RS485 | PB15 TX / PB16 RX |
-| RS485 方向控制 | PB17 |
-| LED | PB22 |
-| KEY | PB21，低电平按下 |
-| SWD | PA19 / PA20 |
-| 板载 SPI Flash | PB6 / PB7 / PB8 / PB9，避免占用 |
+| UART0 调试 | A10 TX / A11 RX，板载 CH340E + Type-C |
+| UART1 MaixCAM | A8 TX / A9 RX |
+| UART3 X42S RS485 | B12 TX / B13 RX |
+| RS485 方向控制 | B14 |
+| OLED | B4 SCL / B5 SDA，软件 IIC |
+| 小车双驱 | B10/B11 左电机，B15/B16 右电机 |
+| 七路灰度 | A21 到 A27，数字输入 |
+| LED | B22 |
+| KEY | B21，低电平按下 |
+| SWD | A19 / A20 |
+| 板载 SPI Flash | B6 / B7 / B8 / B9，避免占用 |
 
 统一硬件宏在：
 
@@ -95,7 +99,7 @@ docs/stm32_f407_skystar_bringup.md
 application/config/app_config.h
 ```
 
-应用层代码禁止直接散写 `PA8`、`PB15`、`PB17` 等硬件编号，应引用 `app_config.h` 和 platform 层接口。
+应用层代码禁止直接散写 `PA8`、`B12`、`B14`、`B15` 等硬件编号，应引用 `app_config.h` 和 platform 层接口。
 
 ## 代码修改原则
 

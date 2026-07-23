@@ -207,8 +207,8 @@ mapping:
 | --- | --- | --- |
 | Debug serial | UART0, PA10 TX / PA11 RX | On-board CH340E and Type-C |
 | MaixCAM Pro | UART1, PA8 TX / PA9 RX | Vision protocol |
-| X42S RS485 | UART2, PB15 TX / PB16 RX | Motor free protocol |
-| RS485 direction | PB17 | Low: receive; high: transmit |
+| X42S RS485 | UART3, B12 TX / B13 RX | Motor free protocol |
+| RS485 direction | B14 | Low: receive; high: transmit |
 | LED | PB22 | Board LED |
 | Key | PB21 | Active low |
 | On-board SPI Flash | PB6 to PB9 | Keep clear of unrelated use |
@@ -222,7 +222,7 @@ Before the board is available, confirm:
 - Keil rebuild completes with zero errors and zero warnings.
 - `application/` appears as an `application` group in the Keil project.
 - The TI MSPM0G3507 device pack is installed.
-- UART0, UART1, UART2, and PB17 settings exist in the generated `.syscfg`.
+- UART0, UART1, UART3, and B14 settings exist in the generated `.syscfg`.
 - Git status is clean after commit and the branch is pushed.
 
 When hardware arrives, follow the validation order in

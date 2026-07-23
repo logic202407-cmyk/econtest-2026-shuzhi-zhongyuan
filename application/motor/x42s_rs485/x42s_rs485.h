@@ -40,6 +40,9 @@ void X42S_SetSpeed(uint8_t id, int32_t speed);
 int32_t X42S_ReadPosition(uint8_t id);
 
 void X42S_Stop(uint8_t id);
+/* Relative low-risk commissioning move. The normal position API remains
+ * absolute so the gimbal controller can own its accumulated target angle. */
+void X42S_NudgeRelative(uint8_t id, int32_t delta_0p1deg);
 void X42S_SetPositionEx(uint8_t id, int32_t position_0p1deg,
                         uint16_t acc_rpm_s, uint16_t dec_rpm_s,
                         uint16_t speed_0p1rpm, uint8_t raf, bool sync);

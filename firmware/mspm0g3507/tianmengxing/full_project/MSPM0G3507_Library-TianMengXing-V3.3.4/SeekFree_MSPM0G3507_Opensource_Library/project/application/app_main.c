@@ -3,7 +3,11 @@
 #include <stdint.h>
 
 #include "app_main.h"
+#include "car/car_chassis.h"
+#include "car/car_demo.h"
+#include "car/car_gray.h"
 #include "config/app_config.h"
+#include "display/tjc_screen/tjc_screen.h"
 #include "gimbal/gimbal_control.h"
 #include "motor/x42s_rs485/x42s_rs485.h"
 #include "vision/maixcam_protocol.h"
@@ -41,7 +45,7 @@ APP_WEAK bool App_MotorReadByte(uint8_t *byte)
     return false;
 }
 
-/* This hook must return only after UART2 has shifted the last byte. */
+/* This hook must return only after the motor UART has shifted the last byte. */
 APP_WEAK void App_MotorSend(const uint8_t *data, size_t len)
 {
     (void)data;
@@ -51,6 +55,11 @@ APP_WEAK void App_MotorSend(const uint8_t *data, size_t len)
 APP_WEAK void App_Rs485SetTxEnable(bool enable)
 {
     (void)enable;
+}
+
+APP_WEAK void App_BoardService(uint32_t now_ms)
+{
+    (void)now_ms;
 }
 
 APP_WEAK void App_Idle(void) {}
@@ -78,6 +87,14 @@ void App_Init(void)
     App_VisionUartInit();
     App_MotorUartInit();
 
+#if TJC_SCREEN_ENABLED
+    TJC_ScreenInit();
+#endif
+#if CAR_MOTION_ENABLED
+    CarGray_Init();
+    CarChassis_Init();
+#endif
+
     MaixCAM_ProtocolInit(&g_vision_parser);
     X42S_SetPortOps(&motor_port);
     Gimbal_Init(&g_gimbal);
@@ -96,6 +113,9 @@ void App_MainLoopOnce(void)
             break;
         }
 
+#if APP_VISION_RX_DEBUG_ENABLED
+        App_DebugLog("VISION,RX\r\n");
+#endif
         if (MaixCAM_ProtocolInputByte(&g_vision_parser, byte, now_ms)) {
             g_vision_timeout_reported = false;
             App_DebugLog("VISION,FRAME\r\n");
@@ -108,6 +128,11 @@ void App_MainLoopOnce(void)
         }
 
         X42S_OnRxByte(byte);
+#if APP_MOTOR_RX_DEBUG_ENABLED
+        if (byte == X42S_CHECK_FIXED) {
+            App_DebugLog("X42S,RX,FRAME\r\n");
+        }
+#endif
     }
 
     Gimbal_Update(&g_gimbal, &g_vision_parser, now_ms);
@@ -115,14 +140,25 @@ void App_MainLoopOnce(void)
         g_vision_timeout_reported = true;
         App_DebugLog("VISION,TIMEOUT\r\n");
     }
+    App_BoardService(now_ms);
     App_Idle();
 }
 
 void App_Run(void)
 {
+#if APP_GIMBAL_RS485_TEST_BOOT_ENABLED
     App_Init();
 
     while (true) {
         App_MainLoopOnce();
     }
+#elif CAR_DEMO_AUTORUN_ENABLED
+    CarDemo_Run();
+#else
+    App_Init();
+
+    while (true) {
+        App_MainLoopOnce();
+    }
+#endif
 }

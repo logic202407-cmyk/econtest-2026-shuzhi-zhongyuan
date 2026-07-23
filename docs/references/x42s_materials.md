@@ -1,71 +1,53 @@
-# X42S 电机资料摘要
+# X42S Motor Materials Summary
 
-## 原始资料
+Original X42S manuals and examples are kept in the team material folder or
+shared storage, not in Git. This page records the conclusions needed by the
+project code.
 
-原始 X42S 资料不纳入仓库；请从供应商资料包或队伍共享存储获取。
+## Protocol Choice
 
-| 资料类别 | 主要用途 | 当前优先级 |
+Use the X firmware free protocol first:
+
+| Item | Current choice |
+| --- | --- |
+| Physical layer | RS485 |
+| UART settings | 115200, 8N1 |
+| Check byte | Fixed `0x6B` |
+| Driver code | `application/motor/x42s_rs485/` |
+| Modbus | Not used unless the motor checksum setting is changed to Modbus |
+
+Do not send Modbus frames to a motor that is still using the default X firmware
+free protocol.
+
+## Current TianMengXing Wiring
+
+| TianMengXing | RS485 module | X42S side |
 | --- | --- | --- |
-| `3. 说明书` | X42S 用户手册、Modbus 协议 | 必读 |
-| `9.例程_STM32F407` | HAL/标准库电机通信参考 | 凯参考 |
-| `14.例程_TI_MSPM0G3507` | MSPM0 接入参考 | 队长参考 |
-| `11.例程_Arduino`、`12.例程_树莓派Python` | 快速验证通信 | 可选 |
-| `13.例程_Modbus Poll` | Modbus 调试 | 可选，不是当前主协议 |
-| 3D、滑台、外壳、PCB 尺寸、上位机、固件更新 | 机械、选型、调试或升级 | 按需 |
-| STM32F103 例程 | 旧平台参考 | 当前不优先 |
+| B12 / UART3 TX | TXD / DI | RS485 A/B bus |
+| B13 / UART3 RX | RXD / RO | RS485 A/B bus |
+| GND | GND | Signal ground |
+| 3V3 | VCC, if the module supports 3.3 V | - |
+| B14 | DE and `/RE`, optional | Manual-direction modules only |
 
-## 协议选择
+The current small TTL-RS485 module is automatic-direction, so `B14` is left
+unconnected for that module.
 
-资料包同时包含 X 固件自由协议和 Modbus 资料，二者不能混用：
+## Safe Bring-Up Order
 
-| 项目 | 当前主链路：X 自由协议 | Modbus-RTU |
-| --- | --- | --- |
-| 使用场景 | 本项目 MSPM0 云台控制 | 上位机或明确切换为 Modbus 后 |
-| 校验 | 默认固定 `0x6B` | CRC16 |
-| 帧结构 | 地址、指令、参数、校验 | 地址、功能码、寄存器、数据、CRC |
-| 代码依据 | `application/motor/x42s_rs485/` | 当前未实现驱动 |
+1. Confirm motor firmware type, address, baud rate, and power range on the
+   motor screen.
+2. Use USB-RS485 first to verify disable and read-position commands.
+3. Connect TianMengXing UART3 B12/B13 to the RS485 module.
+4. Test disable and read-position before any motion command.
+5. Use low speed and small angle after the mechanical direction and limits are
+   known.
+6. Keep `GIMBAL_MOTION_ENABLED == 0U` until the gimbal safety checklist is
+   complete.
 
-不要因为资料包内有 Modbus PDF，就向保持默认 X 固件设置的电机发送 Modbus 帧。
+## Troubleshooting
 
-## 当前项目结论
-
-- 当前按 X 固件自由协议接入，不按 Modbus 协议实现主链路。
-- 默认通信参数：`115200 8N1`，固定校验字节 `0x6B`；上电前仍需从电机屏幕确认固件类型、站号、波特率和供电范围。
-- 主控链路：`UART2 PB15/PB16 -> 自动方向 TTL-RS485 模块 -> X42S`；模块没有 DE/RE，`PB17` 不接。
-- 应用驱动：`application/motor/x42s_rs485/`；协议结论和帧格式：`docs/x42s_rs485_analysis.md`。
-
-## 当前驱动能力
-
-| 接口 | 用途 | 当前状态 |
-| --- | --- | --- |
-| `X42S_Enable()` / `X42S_Disable()` | 使能或失能 | 已有 |
-| `X42S_SetPosition()` | 按位置控制 | 已有 |
-| `X42S_SetSpeed()` | 按速度控制 | 已有 |
-| `X42S_Stop()` | 立即停止 | 已有 |
-| `X42S_ReadPosition()` | 请求实时位置 | 已有请求接口，待实机验证回包解析 |
-| 回零、读速度、多机同步、Modbus | 扩展功能 | 待硬件链路跑通后补齐 |
-
-## 安全联调顺序
-
-1. 核对电机铭牌和电机屏幕，确认供电、电机地址、固件和波特率。
-2. 先用 USB-RS485 或上位机验证电机可失能、可读取位置。
-3. 再接天猛星 UART2，检查 PB15/PB16 的 115200 8N1 波形；自动方向模块不接 PB17。
-4. 先发送失能和读位置，确认应答方向和 A/B 接线。
-5. 只在机械限位留有余量时测试低速、小角度位置命令。
-6. 云台连续跟踪前，验证 500 ms 无视觉目标会调用停止。
-
-## 常见排查点
-
-- 无应答：先交换 A/B，确认共地、地址、固件协议和波特率。
-- 能发不能收：检查 RS485 模块 `RXD` 是否连接 PB16、模块是否为 3.3 V 逻辑。
-- 电机突然大幅运动：立即失能，检查位置模式的绝对/相对标志、方向位和位置单位。
-- 多电机：每台设置唯一地址；同步命令需要在单电机稳定后再测试。
-
-## 必须共享的原文件
-
-1. `ZDT_X42S第二代闭环步进电机用户手册V1.0.5_260527.pdf`
-2. `ZDT闭环步进电机MODBUS协议使用说明V1.0.1_260401.pdf`
-3. `9.例程_STM32F407`
-4. `14.例程_TI_MSPM0G3507`
-
-原始例程和工具体积大，适合放队内网盘或 Release，不纳入普通 Git 仓库。
+| Symptom | Check |
+| --- | --- |
+| No reply | Motor address, baud rate, protocol, shared ground, and RS485 A/B polarity |
+| Can send but cannot receive | Module RXD/RO to TianMengXing B13, module voltage level |
+| Unexpected motion | Absolute/relative flag, direction bit, position unit, and mechanical zero |

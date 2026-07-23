@@ -24,9 +24,9 @@
 | --- | --- | --- |
 | 调试 | UART0，PA10/PA11 | CH340E + Type-C，永久保留 |
 | 视觉 | UART1，PA8/PA9 | MaixCAM 通信 |
-| 电机 | UART2，PB15/PB16 | X42S RS485 模块通信 |
+| 电机 | UART3，B12/B13 | X42S RS485 模块通信 |
 | LED / KEY | PB22 / PB21 | KEY 为低电平有效 |
-| PB17 | GPIO 预留 | 仅供未来手动 DE/RE RS485 模块；当前自动方向模块不连接 |
+| B14 | GPIO 预留 | 仅供未来手动 DE/RE RS485 模块；当前自动方向模块不连接 |
 
 完整接口和冲突检查以 `docs/hardware_interface.md` 与 `docs/mspm0_uart_plan.md` 为准。`05-【MSPM0G3507】开发工具` 体积较大，只在安装烧录或调试工具时按需获取。
 
@@ -35,11 +35,11 @@
 1. 用 UART0 打印或串口助手确认 CH340E 调试口可用。
 2. 点亮 PB22 LED、读取 PB21 按键，确认最小 GPIO 链路。
 3. 只连接 MaixCAM，验证 UART1 的接收和协议超时。
-4. 只连接自动方向 RS485 模块，验证 UART2 的波形和收发。
+4. 只连接自动方向 RS485 模块，验证 UART3 的波形和收发。
 5. 最后连接 X42S 电源与总线，先执行失能、读位置，再执行低速运动。
 
 ## 配置边界
 
 - 应用层只从 `application/config/app_config.h` 引用 UART/GPIO，不能直接散写管脚号。
-- 已生成工程的 SysConfig 未生成 UART1、UART2 和 PB17；当前平台层使用逐飞运行时初始化。若改成完全由 SysConfig 管理，必须补齐配置并重新生成，不能手改生成 C 文件。
+- 已生成工程的 SysConfig 未生成 UART1、UART3 和 B14；当前平台层使用逐飞运行时初始化。若改成完全由 SysConfig 管理，必须补齐配置并重新生成，不能手改生成 C 文件。
 - PA19/PA20 为 SWD，PB6/PB7/PB8/PB9 为板载 Flash 相关资源，除非重新评审，不作为本项目扩展接口。

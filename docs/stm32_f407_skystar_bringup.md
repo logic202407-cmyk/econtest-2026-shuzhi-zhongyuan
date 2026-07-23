@@ -22,6 +22,7 @@ files into it.
 | Debug printf | USART1 | PA9 TX / PA10 RX | 115200 8N1 |
 | MaixCAM fake input | USART2 | PA2 TX / PA3 RX | 115200 8N1 |
 | X42S RS485 backup | USART3 | PB10 TX / PB11 RX | 115200 8N1 |
+| TJC 7-inch screen reserve | USART6 | PC6 TX / PC7 RX | 115200 8N1 |
 
 ## X42S RS485 Map
 
@@ -96,6 +97,34 @@ OLED SDA -> Skystar PB9
 The driver uses software I2C, so it does not require extra Keil peripheral
 configuration. The default I2C write address is `0x78`, which corresponds to
 the common 7-bit OLED address `0x3C`.
+
+## TJC Screen Reserve
+
+The Skystar backup project includes a small TJC serial-screen driver for later
+display testing.
+
+Default wiring:
+
+```text
+TJC TX -> Skystar PC7 / USART6_RX
+TJC RX -> Skystar PC6 / USART6_TX
+TJC GND -> Skystar GND
+TJC 5V -> independent 5V supply
+```
+
+The TJC command terminator is:
+
+```text
+FF FF FF
+```
+
+The tested screen works at `115200 8N1` and responds to `bkcmd=3`,
+`dim=30`, and `dim=100`.
+
+`SKYSTAR_TJC_ENABLED` is currently `0U` in
+`firmware/stm32_f407/skystar_stdperiph_project/bsp/tjc/skystar_tjc.h`, so the
+screen UART is reserved but not enabled by default. Set it to `1U` when testing
+the screen on Skystar.
 
 Expected OLED pages after reset:
 
@@ -186,7 +215,7 @@ DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, 115200 8N1
 Newer firmware builds include the key, OLED, and X42S map in the second line:
 
 ```text
-DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, X42S: USART3 PB10/PB11, KEY: PA0, OLED: PB8/PB9, 115200 8N1
+DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, X42S: USART3 PB10/PB11, TJC reserve: USART6 PC6/PC7, KEY: PA0, OLED: PB8/PB9, 115200 8N1
 ```
 
 If the text is garbled, check the baud rate first. A common mistake is leaving

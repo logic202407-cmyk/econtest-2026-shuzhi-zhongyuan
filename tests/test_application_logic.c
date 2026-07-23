@@ -138,6 +138,14 @@ static void test_x42s_frames(void)
     assert(g_last_len == sizeof(position_expected));
     assert(memcmp(g_last_frame, position_expected, sizeof(position_expected)) == 0);
 
+    X42S_NudgeRelative(1U, 900);
+    assert(g_last_len == sizeof(position_expected));
+    assert(g_last_frame[10] == 0x01U);
+    assert(g_last_frame[6] == 0x00U);
+    assert(g_last_frame[7] == 0x00U);
+    assert(g_last_frame[8] == 0x03U);
+    assert(g_last_frame[9] == 0x20U);
+
     X42S_SetSpeed(2U, -25);
     assert(g_last_len == sizeof(speed_expected));
     assert(memcmp(g_last_frame, speed_expected, sizeof(speed_expected)) == 0);
@@ -165,7 +173,7 @@ static void test_x42s_frames(void)
     assert(g_last_len == sizeof(stop_expected));
     assert(memcmp(g_last_frame, stop_expected, sizeof(stop_expected)) == 0);
     assert(g_tx_enable_count == g_tx_disable_count);
-    assert(g_tx_enable_count == 7U);
+    assert(g_tx_enable_count == 8U);
 }
 
 static void test_gimbal_timeout_stop(void)

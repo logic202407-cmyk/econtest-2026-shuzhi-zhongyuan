@@ -80,7 +80,7 @@ VISION,TIMEOUT
 
 ## X42S RS485 Frames
 
-Use a USB-RS485 adapter and set the target motor to X firmware free protocol.
+Use a USB-RS485 adapter and set the target motor to Emm firmware free protocol.
 The tool uses the project's fixed `0x6B` check byte.
 
 ```powershell
@@ -110,7 +110,7 @@ It sends:
 disable -> read position -> read speed -> stop
 ```
 
-Only after confirming the motor ID, X firmware free protocol, A/B wiring, power,
+Only after confirming the motor ID, Emm firmware free protocol, A/B wiring, power,
 zero point, and mechanical clearance, use the small nudge scenario. It requires
 `--confirm-motion` on purpose:
 
@@ -120,5 +120,5 @@ python .\tools\serial_debug\serial_debug.py x42s scenario nudge-position `
   --confirm-motion --port COM8
 ```
 
-`--position 50` means `5 degrees` in the current X42S X-firmware default unit.
+`--position 50` means `5 degrees`; the driver converts this to Emm `clk` pulses.
 Do not run this while the gimbal linkage can hit a hard stop.

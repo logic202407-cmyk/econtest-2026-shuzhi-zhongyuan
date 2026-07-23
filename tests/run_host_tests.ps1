@@ -14,6 +14,14 @@ if ([System.IO.Path]::IsPathRooted($BuildDirectory)) {
 $executable = Join-Path $output "test_application_logic.exe"
 $lockExecutable = Join-Path $output "test_gimbal_motion_lock.exe"
 $stm32VisionExecutable = Join-Path $output "test_stm32_vision_ascii.exe"
+$gccExecutable = $executable
+$gccLockExecutable = $lockExecutable
+$gccStm32VisionExecutable = $stm32VisionExecutable
+if (-not [System.IO.Path]::IsPathRooted($BuildDirectory)) {
+    $gccExecutable = Join-Path $BuildDirectory "test_application_logic.exe"
+    $gccLockExecutable = Join-Path $BuildDirectory "test_gimbal_motion_lock.exe"
+    $gccStm32VisionExecutable = Join-Path $BuildDirectory "test_stm32_vision_ascii.exe"
+}
 $sources = @(
     "tests/test_application_logic.c",
     "application/vision/maixcam_protocol.c",
@@ -97,12 +105,12 @@ if (Get-Command cl.exe -ErrorAction SilentlyContinue) {
         & cl.exe /nologo /std:c11 /W4 /I$root /Fe:$stm32VisionExecutable $stm32VisionSources
     }
 } elseif (Get-Command gcc.exe -ErrorAction SilentlyContinue) {
-    & gcc.exe -std=c11 -Wall -Wextra -Werror -DGIMBAL_MOTION_ENABLED=1 -I$root -o $executable $sources
+    & gcc.exe -std=c11 -Wall -Wextra -Werror -DGIMBAL_MOTION_ENABLED=1 -I$root -o $gccExecutable $sources
     if ($LASTEXITCODE -eq 0) {
-        & gcc.exe -std=c11 -Wall -Wextra -Werror -I$root -o $lockExecutable $lockSources
+        & gcc.exe -std=c11 -Wall -Wextra -Werror -I$root -o $gccLockExecutable $lockSources
     }
     if ($LASTEXITCODE -eq 0) {
-        & gcc.exe -std=c11 -Wall -Wextra -Werror -I$root -o $stm32VisionExecutable $stm32VisionSources
+        & gcc.exe -std=c11 -Wall -Wextra -Werror -I$root -o $gccStm32VisionExecutable $stm32VisionSources
     }
 } else {
     $armclang = Resolve-Armclang -RequestedPath $ArmclangPath

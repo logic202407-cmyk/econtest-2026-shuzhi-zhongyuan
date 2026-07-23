@@ -1,7 +1,7 @@
 #include "x42s_rs485.h"
 
-#if X42S_FIRMWARE_X_FREE != 1U
-#error "The current x42s_rs485 driver supports only X firmware free protocol."
+#if X42S_FIRMWARE_EMM_FREE != 1U
+#error "The current x42s_rs485 driver supports only Emm firmware free protocol."
 #endif
 
 #ifndef X42S_MAX_ID
@@ -29,6 +29,48 @@ static uint32_t abs_i32(int32_t value)
     }
 
     return (uint32_t)value;
+}
+
+static uint16_t speed_0p1rpm_to_rpm(uint16_t speed_0p1rpm)
+{
+    uint32_t rpm = ((uint32_t)speed_0p1rpm + 5U) / 10U;
+
+    if (rpm > 0xFFFFU) {
+        return 0xFFFFU;
+    }
+
+    return (uint16_t)rpm;
+}
+
+static uint8_t acc_rpm_s_to_emm(uint16_t acc_rpm_s)
+{
+    uint32_t acc = ((uint32_t)acc_rpm_s + 5U) / 10U;
+
+    if (acc > 0xFFU) {
+        return 0xFFU;
+    }
+
+    return (uint8_t)acc;
+}
+
+static uint32_t angle_0p1deg_to_pulses(int32_t angle_0p1deg)
+{
+    uint32_t angle = abs_i32(angle_0p1deg);
+    uint32_t pulses = (angle * X42S_EMM_POSITION_PULSES_PER_REV + 1800U) / 3600U;
+
+    if (angle != 0U && pulses == 0U) {
+        pulses = 1U;
+    }
+
+    return pulses;
+}
+
+static int32_t pulses_to_angle_0p1deg(uint32_t pulses, uint8_t sign)
+{
+    int32_t angle = (int32_t)((pulses * 3600U + (X42S_EMM_POSITION_PULSES_PER_REV / 2U)) /
+                             X42S_EMM_POSITION_PULSES_PER_REV);
+
+    return sign ? -angle : angle;
 }
 
 static void put_u16(uint8_t *buf, uint16_t value)
@@ -111,7 +153,14 @@ void X42S_SetPosition(uint8_t id, int32_t position)
 {
     X42S_SetPositionEx(id, position, X42S_DEFAULT_ACC_RPM_S,
                        X42S_DEFAULT_DEC_RPM_S, X42S_DEFAULT_SPEED_0P1_RPM,
-                       2U, false);
+                       0U, false);
+}
+
+void X42S_NudgeRelative(uint8_t id, int32_t delta_0p1deg)
+{
+    X42S_SetPositionEx(id, delta_0p1deg, X42S_DEFAULT_ACC_RPM_S,
+                       X42S_DEFAULT_DEC_RPM_S, X42S_DEFAULT_SPEED_0P1_RPM,
+                       1U, false);
 }
 
 void X42S_SetSpeed(uint8_t id, int32_t speed)
@@ -121,7 +170,7 @@ void X42S_SetSpeed(uint8_t id, int32_t speed)
 
 int32_t X42S_ReadPosition(uint8_t id)
 {
-    uint8_t frame[] = {id, 0x0FU, X42S_CHECK_FIXED};
+    uint8_t frame[] = {id, 0x36U, X42S_CHECK_FIXED};
     send_frame(frame, sizeof(frame));
     return X42S_GetLastPosition(id);
 }
@@ -136,18 +185,19 @@ void X42S_SetPositionEx(uint8_t id, int32_t position_0p1deg,
                         uint16_t acc_rpm_s, uint16_t dec_rpm_s,
                         uint16_t speed_0p1rpm, uint8_t raf, bool sync)
 {
-    uint8_t frame[16] = {0};
+    uint8_t frame[13] = {0};
+    uint32_t pulses = angle_0p1deg_to_pulses(position_0p1deg);
 
+    (void)dec_rpm_s;
     frame[0] = id;
     frame[1] = 0xFDU;
     frame[2] = direction_from_signed(position_0p1deg);
-    put_u16(&frame[3], acc_rpm_s);
-    put_u16(&frame[5], dec_rpm_s);
-    put_u16(&frame[7], speed_0p1rpm);
-    put_u32(&frame[9], abs_i32(position_0p1deg));
-    frame[13] = raf;
-    frame[14] = sync ? 1U : 0U;
-    frame[15] = X42S_CHECK_FIXED;
+    put_u16(&frame[3], speed_0p1rpm_to_rpm(speed_0p1rpm));
+    frame[5] = acc_rpm_s_to_emm(acc_rpm_s);
+    put_u32(&frame[6], pulses);
+    frame[10] = (raf != 0U) ? 1U : 0U;
+    frame[11] = sync ? 1U : 0U;
+    frame[12] = X42S_CHECK_FIXED;
 
     send_frame(frame, sizeof(frame));
 }
@@ -155,22 +205,22 @@ void X42S_SetPositionEx(uint8_t id, int32_t position_0p1deg,
 void X42S_SetSpeedEx(uint8_t id, int32_t speed_0p1rpm,
                      uint16_t acc_rpm_s, bool sync)
 {
-    uint8_t frame[9] = {0};
+    uint8_t frame[8] = {0};
 
     frame[0] = id;
     frame[1] = 0xF6U;
     frame[2] = direction_from_signed(speed_0p1rpm);
-    put_u16(&frame[3], acc_rpm_s);
-    put_u16(&frame[5], (uint16_t)abs_i32(speed_0p1rpm));
-    frame[7] = sync ? 1U : 0U;
-    frame[8] = X42S_CHECK_FIXED;
+    put_u16(&frame[3], speed_0p1rpm_to_rpm((uint16_t)abs_i32(speed_0p1rpm)));
+    frame[5] = acc_rpm_s_to_emm(acc_rpm_s);
+    frame[6] = sync ? 1U : 0U;
+    frame[7] = X42S_CHECK_FIXED;
 
     send_frame(frame, sizeof(frame));
 }
 
 void X42S_RequestSpeed(uint8_t id)
 {
-    uint8_t frame[] = {id, 0x0EU, X42S_CHECK_FIXED};
+    uint8_t frame[] = {id, 0x35U, X42S_CHECK_FIXED};
     send_frame(frame, sizeof(frame));
 }
 
@@ -209,12 +259,11 @@ void X42S_OnRxByte(uint8_t byte)
         uint8_t cmd = g_rx_buf[1];
         uint8_t sign = g_rx_buf[2];
 
-        if (id <= X42S_MAX_ID && cmd == 0x0EU && g_rx_len >= 6U) {
+        if (id <= X42S_MAX_ID && cmd == 0x35U && g_rx_len >= 6U) {
             int32_t speed = (int32_t)get_u16(&g_rx_buf[3]);
-            g_last_speed[id] = sign ? -speed : speed;
-        } else if (id <= X42S_MAX_ID && cmd == 0x0FU && g_rx_len >= 8U) {
-            int32_t position = (int32_t)get_u32(&g_rx_buf[3]);
-            g_last_position[id] = sign ? -position : position;
+            g_last_speed[id] = sign ? -(speed * 10) : (speed * 10);
+        } else if (id <= X42S_MAX_ID && cmd == 0x36U && g_rx_len >= 8U) {
+            g_last_position[id] = pulses_to_angle_0p1deg(get_u32(&g_rx_buf[3]), sign);
         }
     }
 

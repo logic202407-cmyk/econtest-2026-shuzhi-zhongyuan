@@ -66,17 +66,17 @@ def x42s_position(
     sync: bool,
 ) -> bytes:
     validate_motor_id(motor_id)
-    validate_u16(acceleration_rpm_s, "acceleration")
-    validate_u16(deceleration_rpm_s, "deceleration")
-    validate_u16(speed_0p1rpm, "speed")
     if not 0 <= raf <= 0xFF:
         raise ValueError("raf must fit in uint8")
-    magnitude = abs_i32(position_0p1deg, "position")
+    speed_rpm = speed_0p1rpm_to_rpm(speed_0p1rpm)
+    acceleration = acceleration_to_emm(acceleration_rpm_s)
+    _ = deceleration_rpm_s
+    magnitude = angle_0p1deg_to_pulses(position_0p1deg)
     direction = 1 if position_0p1deg < 0 else 0
     return (
         bytes((motor_id, 0xFD, direction))
-        + struct.pack(">HHHI", acceleration_rpm_s, deceleration_rpm_s, speed_0p1rpm, magnitude)
-        + bytes((raf, int(sync), X42S_CHECK))
+        + struct.pack(">HBI", speed_rpm, acceleration, magnitude)
+        + bytes((1 if raf else 0, int(sync), X42S_CHECK))
     )
 
 
@@ -84,16 +84,31 @@ def x42s_speed(
     motor_id: int, speed_0p1rpm: int, acceleration_rpm_s: int, sync: bool
 ) -> bytes:
     validate_motor_id(motor_id)
-    validate_u16(acceleration_rpm_s, "acceleration")
-    magnitude = abs_i32(speed_0p1rpm, "speed")
-    validate_u16(magnitude, "speed")
+    magnitude = speed_0p1rpm_to_rpm(abs_i32(speed_0p1rpm))
+    acceleration = acceleration_to_emm(acceleration_rpm_s)
     direction = 1 if speed_0p1rpm < 0 else 0
-    return bytes((motor_id, 0xF6, direction)) + struct.pack(">HH", acceleration_rpm_s, magnitude) + bytes((int(sync), X42S_CHECK))
+    return bytes((motor_id, 0xF6, direction)) + struct.pack(">HB", magnitude, acceleration) + bytes((int(sync), X42S_CHECK))
 
 
 def x42s_request(motor_id: int, command: int) -> bytes:
     validate_motor_id(motor_id)
     return bytes((motor_id, command, X42S_CHECK))
+
+
+def speed_0p1rpm_to_rpm(speed_0p1rpm: int) -> int:
+    validate_u16(speed_0p1rpm, "speed")
+    return min((speed_0p1rpm + 5) // 10, 0xFFFF)
+
+
+def acceleration_to_emm(acceleration_rpm_s: int) -> int:
+    validate_u16(acceleration_rpm_s, "acceleration")
+    return min((acceleration_rpm_s + 5) // 10, 0xFF)
+
+
+def angle_0p1deg_to_pulses(position_0p1deg: int) -> int:
+    angle = abs_i32(position_0p1deg, "position")
+    pulses = (angle * 3200 + 1800) // 3600
+    return 1 if angle and pulses == 0 else pulses
 
 
 def validate_motor_id(motor_id: int) -> None:
@@ -228,7 +243,7 @@ def build_parser() -> argparse.ArgumentParser:
     maix_scenario.add_argument("--timeout-gap", type=float, default=0.7, help="Silence duration for timeout scenario")
     add_transport_options(maix_scenario)
 
-    x42s = protocol.add_parser("x42s", help="X42S X-firmware free protocol")
+    x42s = protocol.add_parser("x42s", help="X42S Emm-firmware free protocol")
     x42s_commands = x42s.add_subparsers(dest="command", required=True)
     for name, help_text in (("enable", "Enable motor"), ("disable", "Disable motor"), ("stop", "Stop motor"), ("read-position", "Request position"), ("read-speed", "Request speed")):
         command = x42s_commands.add_parser(name, help=help_text)
@@ -318,8 +333,8 @@ def make_x42s_scenario(args: argparse.Namespace) -> list[NamedFrame]:
     if args.name == "safe-check":
         return [
             NamedFrame("disable", x42s_enable(args.id, False), 0.05),
-            NamedFrame("read position", x42s_request(args.id, 0x0F), 0.05),
-            NamedFrame("read speed", x42s_request(args.id, 0x0E), 0.05),
+            NamedFrame("read position", x42s_request(args.id, 0x36), 0.05),
+            NamedFrame("read speed", x42s_request(args.id, 0x35), 0.05),
             NamedFrame("stop", x42s_stop(args.id)),
         ]
 
@@ -367,9 +382,9 @@ def make_frame(args: argparse.Namespace) -> bytes:
     if args.command == "stop":
         return x42s_stop(args.id)
     if args.command == "read-position":
-        return x42s_request(args.id, 0x0F)
+        return x42s_request(args.id, 0x36)
     if args.command == "read-speed":
-        return x42s_request(args.id, 0x0E)
+        return x42s_request(args.id, 0x35)
     if args.command == "position":
         return x42s_position(args.id, args.position, args.acc, args.dec, args.speed, args.raf, args.sync)
     if args.command == "speed":
