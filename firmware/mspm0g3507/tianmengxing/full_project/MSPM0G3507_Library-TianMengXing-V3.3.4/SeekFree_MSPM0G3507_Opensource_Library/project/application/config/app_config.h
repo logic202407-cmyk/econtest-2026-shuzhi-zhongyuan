@@ -65,8 +65,10 @@
 #define CAR_MOTOR_PWM_MAX               1000U
 #define CAR_MOTOR_DEFAULT_TARGET_A_MMPS (-200)
 #define CAR_MOTOR_DEFAULT_TARGET_B_MMPS 200
-#define CAR_MOTION_ENABLED              1U
-#define CAR_DEMO_AUTORUN_ENABLED        1U
+// Disabled in the yaw-only gimbal vision test build to stay under the
+// non-commercial Keil 32 KB limit. Re-enable for car-only bring-up builds.
+#define CAR_MOTION_ENABLED              0U
+#define CAR_DEMO_AUTORUN_ENABLED        0U
 
 // Backup car wheel encoders from the teammate-verified project.
 #define CAR_ENCODER_A1_PIN              A14
@@ -148,6 +150,9 @@
 #ifndef GIMBAL_MOTION_ENABLED
 #define GIMBAL_MOTION_ENABLED            0U
 #endif
+// First closed-loop vision test: lock both X42S motors, but move only ID2/Yaw.
+// Keep GIMBAL_MOTION_ENABLED disabled until full two-axis calibration is done.
+#define GIMBAL_YAW_ONLY_TEST_ENABLED     1U
 #define GIMBAL_CONTROL_PERIOD_MS        20U
 #define GIMBAL_TARGET_LOST_TIMEOUT_MS   MAIXCAM_TIMEOUT_MS
 #define GIMBAL_YAW_KP_NUM               1
@@ -163,5 +168,12 @@
 #define GIMBAL_PITCH_MIN_0P1DEG         (-200)
 #define GIMBAL_PITCH_MAX_0P1DEG         200
 #define GIMBAL_STEP_LIMIT_0P1DEG        20
+#define GIMBAL_YAW_ONLY_MIN_0P1DEG      (-100)
+#define GIMBAL_YAW_ONLY_MAX_0P1DEG      100
+#define GIMBAL_YAW_ONLY_STEP_LIMIT_0P1DEG 5
+#define GIMBAL_YAW_ONLY_DEADBAND_0P01DEG 150
+#define GIMBAL_YAW_ONLY_CONF_MIN_0P01PCT 5000U
+#define GIMBAL_YAW_ONLY_KP_NUM          1
+#define GIMBAL_YAW_ONLY_KP_DEN          30
 
 #endif
