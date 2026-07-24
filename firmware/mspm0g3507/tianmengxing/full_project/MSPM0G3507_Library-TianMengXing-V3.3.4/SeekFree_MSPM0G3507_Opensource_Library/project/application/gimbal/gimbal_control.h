@@ -15,7 +15,9 @@ typedef struct
 {
     int32_t yaw_position_0p1deg;
     int32_t pitch_position_0p1deg;
+    int32_t filtered_yaw_0p01deg;
     uint32_t last_update_ms;
+    bool filter_ready;
     bool stopped;
 } Gimbal_Control;
 

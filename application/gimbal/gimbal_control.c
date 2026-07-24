@@ -64,6 +64,23 @@ static int32_t calc_yaw_only_step_0p1deg(int16_t error_0p01deg)
                   GIMBAL_YAW_ONLY_KP_DEN;
     return limit_yaw_only_step(step_0p1deg);
 }
+
+static int32_t filter_yaw_error_0p01deg(Gimbal_Control *gimbal,
+                                        int16_t yaw_0p01deg)
+{
+    int32_t yaw = (int32_t)yaw_0p01deg;
+
+    if (!gimbal->filter_ready) {
+        gimbal->filtered_yaw_0p01deg = yaw;
+        gimbal->filter_ready = true;
+        return yaw;
+    }
+
+    gimbal->filtered_yaw_0p01deg +=
+        (yaw - gimbal->filtered_yaw_0p01deg) >>
+        GIMBAL_YAW_ONLY_FILTER_SHIFT;
+    return gimbal->filtered_yaw_0p01deg;
+}
 #endif
 
 void Gimbal_Init(Gimbal_Control *gimbal)
@@ -74,7 +91,9 @@ void Gimbal_Init(Gimbal_Control *gimbal)
 
     gimbal->yaw_position_0p1deg = 0;
     gimbal->pitch_position_0p1deg = 0;
+    gimbal->filtered_yaw_0p01deg = 0;
     gimbal->last_update_ms = 0U;
+    gimbal->filter_ready = false;
 
 #if (GIMBAL_YAW_ONLY_TEST_ENABLED != 0U)
     X42S_Enable(X42S_YAW_MOTOR_ID);
@@ -104,7 +123,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
     int32_t yaw_step;
 
     if ((uint32_t)(now_ms - gimbal->last_update_ms) <
-        GIMBAL_CONTROL_PERIOD_MS) {
+        GIMBAL_YAW_ONLY_PERIOD_MS) {
         return;
     }
 
@@ -113,6 +132,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
     if (!MaixCAM_HasValidTarget(vision, now_ms)) {
         X42S_Stop(X42S_YAW_MOTOR_ID);
         gimbal->stopped = true;
+        gimbal->filter_ready = false;
         return;
     }
 
@@ -120,10 +140,12 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
     if (target.confidence_0p01pct < GIMBAL_YAW_ONLY_CONF_MIN_0P01PCT) {
         X42S_Stop(X42S_YAW_MOTOR_ID);
         gimbal->stopped = true;
+        gimbal->filter_ready = false;
         return;
     }
 
-    yaw_step = calc_yaw_only_step_0p1deg(target.yaw_0p01deg);
+    yaw_step = calc_yaw_only_step_0p1deg(
+        (int16_t)filter_yaw_error_0p01deg(gimbal, target.yaw_0p01deg));
     yaw_step *= GIMBAL_YAW_VISION_TO_MOTOR_SIGN;
 
     if (yaw_step == 0) {
