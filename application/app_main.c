@@ -75,6 +75,33 @@ static void motor_set_tx_enable(bool enable)
     App_Rs485SetTxEnable(enable);
 }
 
+static void log_vision_frame(const MaixCAM_Parser *parser)
+{
+    char debug_message[96];
+
+    if (parser->target.valid) {
+        long yaw = (long)parser->target.yaw_0p01deg;
+        long pitch = (long)parser->target.pitch_0p01deg;
+        unsigned long confidence = (unsigned long)parser->target.confidence_0p01pct;
+        long yaw_abs = (yaw < 0L) ? -yaw : yaw;
+        long pitch_abs = (pitch < 0L) ? -pitch : pitch;
+
+        (void)snprintf(debug_message, sizeof(debug_message),
+                       "VISION,TARGET,YAW,%ld.%02ld,PITCH,%ld.%02ld,CONF,%lu.%02lu\r\n",
+                       yaw / 100L,
+                       yaw_abs % 100L,
+                       pitch / 100L,
+                       pitch_abs % 100L,
+                       confidence / 100UL,
+                       confidence % 100UL);
+    } else {
+        (void)snprintf(debug_message, sizeof(debug_message),
+                       "VISION,LOST\r\n");
+    }
+
+    App_DebugLog(debug_message);
+}
+
 void App_Init(void)
 {
     static const X42S_PortOps motor_port = {
@@ -125,7 +152,7 @@ void App_MainLoopOnce(void)
 #endif
         if (MaixCAM_ProtocolInputByte(&g_vision_parser, byte, now_ms)) {
             g_vision_timeout_reported = false;
-            App_DebugLog("VISION,FRAME\r\n");
+            log_vision_frame(&g_vision_parser);
         }
     }
 

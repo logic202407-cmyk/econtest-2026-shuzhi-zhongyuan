@@ -17,6 +17,7 @@
 11. `docs/stm32_f407_environment_setup.md`
 12. `docs/codex_prompts/stm32_f407_environment_setup_prompt.md`
 13. `docs/verified_wiring_and_bringup_log.md`
+14. `docs/maixcam2_color_tracking_bringup.md`
 
 ## 当前主线任务
 
