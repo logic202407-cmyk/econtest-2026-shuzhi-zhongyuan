@@ -20,7 +20,7 @@
 本仓库用于 2026“数智中原”河南省大学生电子设计竞赛备赛。当前 MSPM0G3507 主线是：
 
 ```text
-MaixCAM Pro
+MaixCAM2
     |
     | UART1
     v

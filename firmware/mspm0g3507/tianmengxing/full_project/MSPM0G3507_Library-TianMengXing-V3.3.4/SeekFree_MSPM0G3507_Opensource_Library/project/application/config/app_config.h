@@ -116,7 +116,7 @@
 #define APP_DEBUG_LOG_ENABLED            1U
 #define APP_BOARD_SELF_TEST_ENABLED      1U
 #define APP_BOARD_LED_HEARTBEAT_MS       500U
-#define APP_VISION_RX_DEBUG_ENABLED      1U
+#define APP_VISION_RX_DEBUG_ENABLED      0U
 #define APP_VISION_TX_SELF_TEST_ENABLED  1U
 #define APP_VISION_TX_SELF_TEST_MS       1000U
 #define APP_MOTOR_RX_DEBUG_ENABLED       1U
@@ -130,16 +130,21 @@
 // docs/gimbal_parameter_confirmation.md before increasing motion ranges.
 #define X42S_FIRMWARE_EMM_FREE          1U
 #define VISION_ANGLE_UNITS_PER_DEG      100U
+// Position commands use 3200 motion clocks per revolution. The Emm `0x36`
+// real-time position reply instead reports a 16-bit encoder angle.
 #define X42S_EMM_POSITION_PULSES_PER_REV 3200U
+#define X42S_EMM_ENCODER_COUNTS_PER_REV  65536U
 #define X42S_PITCH_MOTOR_ID             1U
 #define X42S_YAW_MOTOR_ID               2U
 #define X42S_DEFAULT_ACC_RPM_S_CONFIG   50U
 #define X42S_DEFAULT_DEC_RPM_S_CONFIG   50U
 #define X42S_DEFAULT_SPEED_0P1_RPM_CFG  200U
+#define X42S_TEST_INTERFRAME_MS          40U
 
 // Gimbal control parameters. Angles are stored in 0.01 degree unless noted.
-// The current ranges are conservative software bounds, not verified mechanical
-// end stops. Keep low-speed, small-angle commissioning until calibration.
+// Mechanical bring-up on 2026-07-23 confirmed that a positive motor command
+// moves ID1/Pitch downward and ID2/Yaw left. Automatic vision motion remains
+// disabled until zero points and final soft limits are recorded.
 #ifndef GIMBAL_MOTION_ENABLED
 #define GIMBAL_MOTION_ENABLED            0U
 #endif
@@ -149,10 +154,14 @@
 #define GIMBAL_YAW_KP_DEN               10
 #define GIMBAL_PITCH_KP_NUM             1
 #define GIMBAL_PITCH_KP_DEN             10
-#define GIMBAL_YAW_MIN_0P1DEG           (-900)
-#define GIMBAL_YAW_MAX_0P1DEG           900
-#define GIMBAL_PITCH_MIN_0P1DEG         (-300)
-#define GIMBAL_PITCH_MAX_0P1DEG         300
+#define GIMBAL_PITCH_POSITIVE_IS_DOWN   1U
+#define GIMBAL_YAW_POSITIVE_IS_LEFT     1U
+#define GIMBAL_PITCH_VISION_TO_MOTOR_SIGN (-1)
+#define GIMBAL_YAW_VISION_TO_MOTOR_SIGN   (-1)
+#define GIMBAL_YAW_MIN_0P1DEG           (-200)
+#define GIMBAL_YAW_MAX_0P1DEG           200
+#define GIMBAL_PITCH_MIN_0P1DEG         (-200)
+#define GIMBAL_PITCH_MAX_0P1DEG         200
 #define GIMBAL_STEP_LIMIT_0P1DEG        20
 
 #endif

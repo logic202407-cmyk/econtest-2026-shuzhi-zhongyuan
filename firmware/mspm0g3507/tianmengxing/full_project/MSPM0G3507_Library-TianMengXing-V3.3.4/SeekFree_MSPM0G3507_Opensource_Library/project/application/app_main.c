@@ -1,5 +1,6 @@
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #include "app_main.h"
@@ -114,7 +115,13 @@ void App_MainLoopOnce(void)
         }
 
 #if APP_VISION_RX_DEBUG_ENABLED
-        App_DebugLog("VISION,RX\r\n");
+        {
+            char debug_message[24];
+            (void)snprintf(debug_message, sizeof(debug_message),
+                           "VISION,BYTE,%02X\r\n",
+                           (unsigned int)byte);
+            App_DebugLog(debug_message);
+        }
 #endif
         if (MaixCAM_ProtocolInputByte(&g_vision_parser, byte, now_ms)) {
             g_vision_timeout_reported = false;
@@ -130,7 +137,32 @@ void App_MainLoopOnce(void)
         X42S_OnRxByte(byte);
 #if APP_MOTOR_RX_DEBUG_ENABLED
         if (byte == X42S_CHECK_FIXED) {
-            App_DebugLog("X42S,RX,FRAME\r\n");
+            uint8_t reply_id = X42S_GetLastReplyId();
+            uint8_t reply_command = X42S_GetLastReplyCommand();
+            char debug_message[64];
+            long position_0p1deg;
+            long position_fraction;
+
+            if (reply_command == 0x36U) {
+                position_0p1deg = (long)X42S_GetLastPosition(reply_id);
+                position_fraction = (position_0p1deg < 0L) ? -position_0p1deg : position_0p1deg;
+                (void)snprintf(debug_message, sizeof(debug_message),
+                               "X42S,POS,ID%u,%ld.%ldDEG\r\n",
+                               (unsigned int)reply_id,
+                               position_0p1deg / 10L,
+                               position_fraction % 10L);
+            } else if (reply_command == 0x35U) {
+                (void)snprintf(debug_message, sizeof(debug_message),
+                               "X42S,SPEED,ID%u,%ld0P1RPM\r\n",
+                               (unsigned int)reply_id,
+                               (long)X42S_GetLastSpeed(reply_id));
+            } else {
+                (void)snprintf(debug_message, sizeof(debug_message),
+                               "X42S,ACK,ID%u,CMD,%02X\r\n",
+                               (unsigned int)reply_id,
+                               (unsigned int)reply_command);
+            }
+            App_DebugLog(debug_message);
         }
 #endif
     }

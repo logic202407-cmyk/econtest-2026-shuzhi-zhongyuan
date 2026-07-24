@@ -1,15 +1,17 @@
 # MaixCAM2 Migration Plan
 
-This document records the planned changes if the vision module is changed from
-MaixCAM Pro to MaixCAM2. The current firmware still targets the existing
-MaixCAM Pro link unless the team explicitly switches hardware.
+This document records the confirmed project switch from MaixCAM Pro to
+MaixCAM2. The TianMengXing MSPM0G3507 side keeps the frozen UART1 assignment;
+the main change is the MaixCAM-side hardware pins, MaixPy UART device, and
+model format.
 
 ## 1. Migration conclusion
 
-MaixCAM2 can keep the same host-side protocol:
+MaixCAM2 is now the preferred vision module for the main contest direction.
+The host-side chain remains:
 
 ```text
-vision module -> UART -> TianMengXing MSPM0G3507 -> gimbal / car control
+MaixCAM2 -> UART1 -> TianMengXing MSPM0G3507 -> gimbal / car control
 ```
 
 The MSPM0G3507 side does not need a pin change. The main change is on the
@@ -68,12 +70,18 @@ err.check_raise(pinmap.set_pin_function("A21", "UART4_TX"), "set A21 UART4_TX fa
 err.check_raise(pinmap.set_pin_function("A22", "UART4_RX"), "set A22 UART4_RX failed")
 
 serial = uart.UART("/dev/ttyS4", 115200)
-serial.write_str("$V,1,320,240,80,80,150.0,8.0,0.0,0.99#")
+serial.write(bytes((0xAA, 0x55, 0x01, 0x06, 0x7B, 0x00, 0xD3, 0xFF, 0x7A, 0x26, 0xF4)))
 ```
 
-For the formal binary protocol, keep the same frame definition in
-`docs/maixcam_protocol.md`; only replace the UART initialization and the AI
-model runtime.
+The repository now contains a MaixCAM2 UART bring-up script:
+
+```text
+firmware/maixcam2/main.py
+```
+
+It sends the formal binary `AA 55 ...` target frame used by the TianMengXing
+MSPM0 application. The legacy ASCII `$V,...#` frame is kept only for older
+USB-TTL and STM32 compatibility testing.
 
 ## 4. Protocol impact
 
@@ -98,21 +106,23 @@ The main development difference is model deployment:
 | Typical model artifact | `.cvimodel` | `.axmodel` |
 | Host protocol | Same project protocol | Same project protocol |
 
-Do not mix model files between the two platforms. If the team switches to
-MaixCAM2, retrain or convert the model for MaixCAM2 and update the MaixPy
-vision script accordingly.
+Do not mix model files between the two platforms. For MaixCAM2, deploy model
+packages as `.mud` plus `.axmodel`. The `.mud` file is loaded by MaixPy and
+points to the actual `.axmodel` file or files.
 
-## 6. Switch checklist
+## 6. Bring-up checklist
 
-Before changing the project default from MaixCAM Pro to MaixCAM2:
+Before running real vision control:
 
 1. Confirm the purchased board exposes A21/A22 as shown on the MaixCAM2 pin map.
 2. Confirm MaixPy can list `/dev/ttyS4`.
 3. Run a MaixCAM2 UART send-only test to a USB-TTL adapter.
 4. Connect MaixCAM2 A21/A22 to TianMengXing A9/A8 and verify MSPM0 receives a
    known test frame.
-5. Only then replace the MaixCAM Pro UART initialization in the project vision
-   script.
+5. Replace `fake_target()` in `firmware/maixcam2/main.py` with the real vision
+   result.
+6. Keep `GIMBAL_MOTION_ENABLED == 0U` until direction, zero, and limits are
+   validated with vision and IMU data.
 
 ## 7. Keep current MSPM0 resources unchanged
 
@@ -129,3 +139,40 @@ The TianMengXing expansion allocation remains:
 
 The MaixCAM2 migration must not steal the TianMengXing grayscale pins; the
 MaixCAM2 `A21/A22` pins are on the camera board only.
+
+## 8. Official references
+
+Use official Sipeed/MaixPy documents first when updating this area:
+
+| Topic | Reference |
+| --- | --- |
+| MaixCAM2 hardware entry | https://wiki.sipeed.com/hardware/zh/maixcam/maixcam2.html |
+| MaixPy UART | https://wiki.sipeed.com/maixpy/doc/zh/peripheral/uart.html |
+| MaixPy pinmap | https://en.wiki.sipeed.com/maixpy/doc/en/peripheral/pinmap.html |
+| MaixCAM2 model conversion | https://wiki.sipeed.com/maixpy/doc/zh/ai_model_converter/maixcam2.html |
+| Model deployment guide | https://wiki.sipeed.com/maixpy/doc/zh/ai_model_converter/ai_model_deploy.html |
+
+## 9. Current verification state
+
+Confirmed by documentation:
+
+- MaixCAM2 UART4 uses `A21 TX / A22 RX` and `/dev/ttyS4`.
+- `115200 8N1` is the recommended first baud rate.
+- MaixCAM2 IO is `3.3V`; do not connect 5V logic directly.
+- MaixCAM2 model packages use `.mud` plus `.axmodel`.
+
+Confirmed on real hardware, 2026-07-24:
+
+- `firmware/maixcam2/main.py` runs on MaixCAM2 and sends the known-good binary
+  frame `AA 55 01 06 7B 00 D3 FF 7A 26 F4`.
+- USB-TTL capture on MaixCAM2 `A21 / UART4_TX` confirmed the exact bytes above.
+- TianMengXing receives MaixCAM2 data through `A9 / UART1_RX` and prints
+  `VISION,FRAME`, confirming the binary protocol parser accepts the frame.
+- Per-byte UART0 logging can make UART1 drop bytes. Keep
+  `APP_VISION_RX_DEBUG_ENABLED == 0U` during normal MaixCAM2 communication
+  tests; use short diagnostic sessions only when raw byte tracing is required.
+
+Still pending:
+
+- Replace fake target data with the final vision algorithm output.
+- Calibrate gimbal zero and fine direction using vision and IMU data.

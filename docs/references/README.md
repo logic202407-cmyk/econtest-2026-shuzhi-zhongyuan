@@ -7,7 +7,7 @@
 | 资料 | 摘要 |
 | --- | --- |
 | 项目总览 | `materials_summary.md` |
-| MaixCAM Pro | `maixcam_pro.md` |
+| MaixCAM2 | `maixcam2.md` |
 | 天猛星 MSPM0G3507 | `tianmengxing_mspm0g3507.md` |
 | 逐飞库与天猛星工程 | `seekfree_library.md` |
 | X42S 电机与例程 | `x42s_materials.md` |
@@ -18,8 +18,8 @@
 
 | 资料 | 用途 | 获取方式 |
 | --- | --- | --- |
-| MaixCAM-Pro 官方页 | 板卡能力、扩展接口 | [Sipeed 官方页](https://wiki.sipeed.com/hardware/zh/maixcam/maixcam_pro.html) |
-| MaixCAM UART 文档 | UART1 自定义通信、A19/A18、3.3 V 电平 | [Sipeed UART 文档](https://wiki.sipeed.com/maixpy/doc/en/peripheral/uart.html) |
+| MaixCAM2 官方页 | 板卡能力、扩展接口 | [Sipeed 官方页](https://wiki.sipeed.com/hardware/zh/maixcam/maixcam2.html) |
+| MaixCAM UART 文档 | UART4 自定义通信、A21/A22、3.3 V 电平 | [Sipeed UART 文档](https://wiki.sipeed.com/maixpy/doc/en/peripheral/uart.html) |
 | MSPM0G3507 数据手册 | UART、GPIO、定时器和 IOMUX | [TI 官方数据手册](https://www.ti.com/lit/ds/symlink/mspm0g3507.pdf) |
 | 逐飞 MSPM0G3507 原始库 | 逐飞底层驱动与 Keil 示例 | [Gitee 官方仓库](https://gitee.com/seekfree/MSPM0G3507_Library) |
 | 项目接口规范 | MaixCAM、MSPM0、X42S 的共同约定 | `docs/maixcam_protocol.md`、`docs/hardware_interface.md`、`docs/platform_layer.md` |
@@ -29,8 +29,8 @@
 ### 井：MaixCAM 与视觉
 
 - 阅读 `docs/maixcam_protocol.md`，它是当前 MSPM0 云台链路的二进制协议基准。
-- 使用 MaixCAM-Pro 的 `UART1`：`A19` 为 TX、`A18` 为 RX；所有 IO 按 3.3 V TTL 连接。
-- 假数据发送脚本在 `firmware/maixcam/main.py`。
+- 使用 MaixCAM2 的 `UART4`：`A21` 为 TX、`A22` 为 RX；所有 IO 按 3.3 V TTL 连接。
+- 假数据发送脚本在 `firmware/maixcam2/main.py`。
 
 ### 凯：STM32、显示与执行机构
 
@@ -47,7 +47,7 @@
 
 ## 当前硬件结论
 
-- MaixCAM 是外置设备：`A19 TX -> MSPM0 PA9 RX`，`A18 RX <- MSPM0 PA8 TX`，双方共地。
+- MaixCAM 是外置设备：`A21 TX -> MSPM0 A9 RX`，`A22 RX <- MSPM0 A8 TX`，双方共地。
 - 当前 RS485 小模块是自动方向型：UART3 的 `B12 TX -> TXD`、`B13 RX <- RXD`，模块接 3.3 V；B14 不接该模块。
 - B14 仍在配置中保留，便于未来替换成需要 DE/RE 的手动方向 RS485 模块。
 - X42S 当前实测使用 Emm 固件自由协议，默认 `115200`、固定校验字节 `0x6B`；首次上电前从电机屏幕确认固件类型、地址和供电范围。
