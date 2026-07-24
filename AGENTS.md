@@ -14,6 +14,8 @@
 8. `docs/gimbal_parameter_confirmation.md`
 9. `docs/stm32_f407_skystar_bringup.md`
 10. `docs/tianmengxing_expansion_pin_map.md`
+11. `docs/stm32_f407_environment_setup.md`
+12. `docs/codex_prompts/stm32_f407_environment_setup_prompt.md`
 
 ## 当前主线任务
 
@@ -73,6 +75,13 @@ MaixCAM ASCII 假数据接收链路。说明见：
 
 ```text
 docs/stm32_f407_skystar_bringup.md
+```
+
+如果队友的 STM32F407 环境无法打开、编译或下载，先读：
+
+```text
+docs/stm32_f407_environment_setup.md
+docs/codex_prompts/stm32_f407_environment_setup_prompt.md
 ```
 
 ## 硬件资源冻结
