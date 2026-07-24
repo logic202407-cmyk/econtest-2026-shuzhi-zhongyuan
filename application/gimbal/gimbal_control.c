@@ -76,8 +76,15 @@ static int32_t limit_yaw_only_speed(int32_t speed_0p1rpm)
 static int32_t calc_yaw_only_speed_0p1rpm(Gimbal_Control *gimbal,
                                           int32_t error_0p01deg)
 {
+    int32_t previous_error = gimbal->previous_yaw_error_0p01deg;
     int32_t derivative_0p01deg;
     int32_t speed_0p1rpm;
+
+    if ((previous_error > 0 && error_0p01deg < 0) ||
+        (previous_error < 0 && error_0p01deg > 0)) {
+        gimbal->previous_yaw_error_0p01deg = error_0p01deg;
+        return 0;
+    }
 
     if (error_0p01deg > -GIMBAL_YAW_ONLY_DEADBAND_0P01DEG &&
         error_0p01deg < GIMBAL_YAW_ONLY_DEADBAND_0P01DEG) {
@@ -90,7 +97,7 @@ static int32_t calc_yaw_only_speed_0p1rpm(Gimbal_Control *gimbal,
         return 0;
     }
 
-    derivative_0p01deg = error_0p01deg - gimbal->previous_yaw_error_0p01deg;
+    derivative_0p01deg = error_0p01deg - previous_error;
     gimbal->previous_yaw_error_0p01deg = error_0p01deg;
 
     speed_0p1rpm = (error_0p01deg * GIMBAL_YAW_ONLY_SPEED_KP_NUM) /
@@ -107,6 +114,26 @@ static int32_t calc_yaw_only_speed_0p1rpm(Gimbal_Control *gimbal,
     }
 
     return limit_yaw_only_speed(speed_0p1rpm);
+}
+
+static int32_t limit_yaw_only_speed_step(int32_t desired_speed,
+                                         int32_t current_speed)
+{
+    int32_t delta = desired_speed - current_speed;
+
+    if (desired_speed == 0) {
+        return 0;
+    }
+
+    if (delta > GIMBAL_YAW_ONLY_SPEED_STEP_0P1_RPM) {
+        return current_speed + GIMBAL_YAW_ONLY_SPEED_STEP_0P1_RPM;
+    }
+
+    if (delta < -GIMBAL_YAW_ONLY_SPEED_STEP_0P1_RPM) {
+        return current_speed - GIMBAL_YAW_ONLY_SPEED_STEP_0P1_RPM;
+    }
+
+    return desired_speed;
 }
 
 static bool update_yaw_only_position_feedback(Gimbal_Control *gimbal,
@@ -249,6 +276,8 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
     yaw_speed = calc_yaw_only_speed_0p1rpm(gimbal,
         filter_yaw_error_0p01deg(gimbal, target.yaw_0p01deg));
     yaw_speed *= GIMBAL_YAW_VISION_TO_MOTOR_SIGN;
+    yaw_speed = limit_yaw_only_speed_step(yaw_speed,
+                                          gimbal->yaw_speed_0p1rpm);
 
     if ((yaw_speed > 0 &&
          gimbal->yaw_position_0p1deg >= GIMBAL_YAW_ONLY_MAX_0P1DEG) ||
