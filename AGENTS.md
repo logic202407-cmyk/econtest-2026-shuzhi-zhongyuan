@@ -16,6 +16,7 @@
 10. `docs/tianmengxing_expansion_pin_map.md`
 11. `docs/stm32_f407_environment_setup.md`
 12. `docs/codex_prompts/stm32_f407_environment_setup_prompt.md`
+13. `docs/verified_wiring_and_bringup_log.md`
 
 ## 当前主线任务
 
@@ -37,6 +38,12 @@ X42S 闭环步进电机
 ```
 
 当前优先目标不是继续扩展架构，而是保持工程可编译、可上板、可安全联调。
+
+已经实物验证成功的 MaixCAM2、天猛星、RS485、X42S 云台接线和现象记录在：
+
+```text
+docs/verified_wiring_and_bringup_log.md
+```
 
 ## 分支和工程入口
 
