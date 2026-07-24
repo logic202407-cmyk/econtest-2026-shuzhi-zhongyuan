@@ -16,7 +16,13 @@ typedef struct
     int32_t yaw_position_0p1deg;
     int32_t pitch_position_0p1deg;
     int32_t filtered_yaw_0p01deg;
+    int32_t previous_yaw_error_0p01deg;
+    int32_t yaw_speed_0p1rpm;
     uint32_t last_update_ms;
+    uint32_t last_motion_ms;
+    uint32_t last_position_request_ms;
+    uint32_t last_position_feedback_ms;
+    uint16_t last_position_update_count;
     bool filter_ready;
     bool stopped;
 } Gimbal_Control;

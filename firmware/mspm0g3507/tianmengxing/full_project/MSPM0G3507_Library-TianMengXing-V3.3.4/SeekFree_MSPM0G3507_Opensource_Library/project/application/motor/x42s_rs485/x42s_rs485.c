@@ -18,8 +18,11 @@
 
 static int32_t g_last_position[X42S_MAX_ID + 1U];
 static int32_t g_last_speed[X42S_MAX_ID + 1U];
+static uint16_t g_position_update_count[X42S_MAX_ID + 1U];
 static uint8_t g_rx_buf[16];
 static uint8_t g_rx_len;
+static uint8_t g_last_reply_id;
+static uint8_t g_last_reply_command;
 static X42S_PortOps g_port_ops;
 
 static uint32_t abs_i32(int32_t value)
@@ -65,10 +68,10 @@ static uint32_t angle_0p1deg_to_pulses(int32_t angle_0p1deg)
     return pulses;
 }
 
-static int32_t pulses_to_angle_0p1deg(uint32_t pulses, uint8_t sign)
+static int32_t encoder_counts_to_angle_0p1deg(uint32_t counts, uint8_t sign)
 {
-    int32_t angle = (int32_t)((pulses * 3600U + (X42S_EMM_POSITION_PULSES_PER_REV / 2U)) /
-                             X42S_EMM_POSITION_PULSES_PER_REV);
+    int32_t angle = (int32_t)((counts * 3600U + (X42S_EMM_ENCODER_COUNTS_PER_REV / 2U)) /
+                             X42S_EMM_ENCODER_COUNTS_PER_REV);
 
     return sign ? -angle : angle;
 }
@@ -242,6 +245,25 @@ int32_t X42S_GetLastSpeed(uint8_t id)
     return g_last_speed[id];
 }
 
+uint8_t X42S_GetLastReplyId(void)
+{
+    return g_last_reply_id;
+}
+
+uint8_t X42S_GetLastReplyCommand(void)
+{
+    return g_last_reply_command;
+}
+
+uint16_t X42S_GetPositionUpdateCount(uint8_t id)
+{
+    if (id > X42S_MAX_ID) {
+        return 0U;
+    }
+
+    return g_position_update_count[id];
+}
+
 void X42S_OnRxByte(uint8_t byte)
 {
     if (g_rx_len < sizeof(g_rx_buf)) {
@@ -254,6 +276,11 @@ void X42S_OnRxByte(uint8_t byte)
         return;
     }
 
+    if (g_rx_len >= 2U) {
+        g_last_reply_id = g_rx_buf[0];
+        g_last_reply_command = g_rx_buf[1];
+    }
+
     if (g_rx_len >= 6U) {
         uint8_t id = g_rx_buf[0];
         uint8_t cmd = g_rx_buf[1];
@@ -263,7 +290,8 @@ void X42S_OnRxByte(uint8_t byte)
             int32_t speed = (int32_t)get_u16(&g_rx_buf[3]);
             g_last_speed[id] = sign ? -(speed * 10) : (speed * 10);
         } else if (id <= X42S_MAX_ID && cmd == 0x36U && g_rx_len >= 8U) {
-            g_last_position[id] = pulses_to_angle_0p1deg(get_u32(&g_rx_buf[3]), sign);
+            g_last_position[id] = encoder_counts_to_angle_0p1deg(get_u32(&g_rx_buf[3]), sign);
+            g_position_update_count[id]++;
         }
     }
 

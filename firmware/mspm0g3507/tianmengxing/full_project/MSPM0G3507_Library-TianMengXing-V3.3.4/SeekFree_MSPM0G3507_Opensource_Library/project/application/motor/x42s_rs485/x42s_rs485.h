@@ -51,6 +51,9 @@ void X42S_SetSpeedEx(uint8_t id, int32_t speed_0p1rpm,
 void X42S_RequestSpeed(uint8_t id);
 int32_t X42S_GetLastPosition(uint8_t id);
 int32_t X42S_GetLastSpeed(uint8_t id);
+uint16_t X42S_GetPositionUpdateCount(uint8_t id);
+uint8_t X42S_GetLastReplyId(void);
+uint8_t X42S_GetLastReplyCommand(void);
 void X42S_OnRxByte(uint8_t byte);
 
 void X42S_PortSend(const uint8_t *data, size_t len);
