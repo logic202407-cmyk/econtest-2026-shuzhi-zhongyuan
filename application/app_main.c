@@ -22,6 +22,9 @@
 static MaixCAM_Parser g_vision_parser;
 static Gimbal_Control g_gimbal;
 static bool g_vision_timeout_reported;
+#if APP_GIMBAL_DEBUG_ENABLED
+static uint32_t g_last_gimbal_debug_ms;
+#endif
 
 /* Platform hooks are implemented by the TianMengXing project integration. */
 APP_WEAK void App_SystemInit(void) {}
@@ -102,6 +105,29 @@ static void log_vision_frame(const MaixCAM_Parser *parser)
     App_DebugLog(debug_message);
 }
 
+#if APP_GIMBAL_DEBUG_ENABLED
+static void log_gimbal_state(uint32_t now_ms)
+{
+    char debug_message[128];
+    MaixCAM_Target target = MaixCAM_GetTarget(&g_vision_parser);
+
+    if ((uint32_t)(now_ms - g_last_gimbal_debug_ms) <
+        APP_GIMBAL_DEBUG_PERIOD_MS) {
+        return;
+    }
+
+    g_last_gimbal_debug_ms = now_ms;
+    (void)snprintf(debug_message, sizeof(debug_message),
+                   "GIMBAL,YAW,%ld,FILT,%ld,SPD,%ld,POS,%ld,STOP,%u\r\n",
+                   (long)target.yaw_0p01deg,
+                   (long)g_gimbal.filtered_yaw_0p01deg,
+                   (long)g_gimbal.yaw_speed_0p1rpm,
+                   (long)g_gimbal.yaw_position_0p1deg,
+                   g_gimbal.stopped ? 1U : 0U);
+    App_DebugLog(debug_message);
+}
+#endif
+
 void App_Init(void)
 {
     static const X42S_PortOps motor_port = {
@@ -127,6 +153,9 @@ void App_Init(void)
     X42S_SetPortOps(&motor_port);
     Gimbal_Init(&g_gimbal);
     g_vision_timeout_reported = true;
+#if APP_GIMBAL_DEBUG_ENABLED
+    g_last_gimbal_debug_ms = 0U;
+#endif
     App_DebugLog("APP,INIT\r\n");
 }
 
@@ -195,6 +224,9 @@ void App_MainLoopOnce(void)
     }
 
     Gimbal_Update(&g_gimbal, &g_vision_parser, now_ms);
+#if APP_GIMBAL_DEBUG_ENABLED
+    log_gimbal_state(now_ms);
+#endif
     if (!g_vision_timeout_reported && MaixCAM_IsTimeout(&g_vision_parser, now_ms)) {
         g_vision_timeout_reported = true;
         App_DebugLog("VISION,TIMEOUT\r\n");
