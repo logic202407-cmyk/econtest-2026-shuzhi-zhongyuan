@@ -17,6 +17,8 @@ typedef struct
     int32_t pitch_position_0p1deg;
     int32_t filtered_yaw_0p01deg;
     int32_t previous_yaw_error_0p01deg;
+    int32_t yaw_rate_0p01deg_s;
+    int32_t predicted_yaw_error_0p01deg;
     int32_t yaw_speed_0p1rpm;
     uint32_t last_update_ms;
     uint32_t last_motion_ms;
@@ -24,6 +26,7 @@ typedef struct
     uint32_t last_position_feedback_ms;
     uint32_t last_stop_ms;
     uint32_t last_target_timestamp_ms;
+    uint32_t last_control_target_timestamp_ms;
     uint16_t last_position_update_count;
     uint8_t valid_target_count;
     uint8_t stop_refresh_count;

@@ -73,8 +73,9 @@ static void test_maixcam_parser(void)
     assert(parser.target.yaw_0p01deg == 123);
     assert(parser.target.pitch_0p01deg == -45);
     assert(parser.target.confidence_0p01pct == 9850U);
-    assert(MaixCAM_HasValidTarget(&parser, 600U));
-    assert(!MaixCAM_HasValidTarget(&parser, 601U));
+    assert(MaixCAM_HasValidTarget(&parser, 100U + MAIXCAM_TIMEOUT_MS));
+    assert(!MaixCAM_HasValidTarget(&parser,
+                                   101U + MAIXCAM_TIMEOUT_MS));
 
     memcpy(bad_frame, target_frame, sizeof(bad_frame));
     bad_frame[sizeof(bad_frame) - 1U] ^= 0x01U;
@@ -167,7 +168,8 @@ static void test_x42s_frames(void)
         X42S_OnRxByte(position_reply[index]);
     }
     assert(X42S_GetLastSpeed(2U) == -250);
-    assert(X42S_GetLastPosition(2U) == 900);
+    /* The 0x36 reply is encoder scale: 65536 counts per revolution. */
+    assert(X42S_GetLastPosition(2U) == 44);
 
     X42S_Stop(1U);
     assert(g_last_len == sizeof(stop_expected));
@@ -193,8 +195,8 @@ static void test_gimbal_timeout_stop(void)
 
     Gimbal_Update(&gimbal, &parser, 20U);
     assert(!gimbal.stopped);
-    assert(gimbal.yaw_position_0p1deg == 2);
-    assert(gimbal.pitch_position_0p1deg == -1);
+    assert(gimbal.yaw_position_0p1deg == -2);
+    assert(gimbal.pitch_position_0p1deg == 1);
 
     Gimbal_Update(&gimbal, &parser, 521U);
     assert(gimbal.stopped);
@@ -223,8 +225,8 @@ static void test_gimbal_limits(void)
         Gimbal_Update(&gimbal, &parser, now_ms);
     }
 
-    assert(gimbal.yaw_position_0p1deg == GIMBAL_YAW_MAX_0P1DEG);
-    assert(gimbal.pitch_position_0p1deg == GIMBAL_PITCH_MIN_0P1DEG);
+    assert(gimbal.yaw_position_0p1deg == GIMBAL_YAW_MIN_0P1DEG);
+    assert(gimbal.pitch_position_0p1deg == GIMBAL_PITCH_MAX_0P1DEG);
 }
 
 int main(void)

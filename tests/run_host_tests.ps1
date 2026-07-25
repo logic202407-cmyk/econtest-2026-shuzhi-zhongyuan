@@ -97,17 +97,17 @@ function Invoke-ArmclangCompileSet {
 }
 
 if (Get-Command cl.exe -ErrorAction SilentlyContinue) {
-    & cl.exe /nologo /std:c11 /W4 /DGIMBAL_MOTION_ENABLED=1 /I$root /Fe:$executable $sources
+    & cl.exe /nologo /std:c11 /W4 /DGIMBAL_MOTION_ENABLED=1 /DGIMBAL_YAW_ONLY_TEST_ENABLED=0 /I$root /Fe:$executable $sources
     if ($LASTEXITCODE -eq 0) {
-        & cl.exe /nologo /std:c11 /W4 /I$root /Fe:$lockExecutable $lockSources
+        & cl.exe /nologo /std:c11 /W4 /DGIMBAL_YAW_ONLY_TEST_ENABLED=0 /I$root /Fe:$lockExecutable $lockSources
     }
     if ($LASTEXITCODE -eq 0) {
         & cl.exe /nologo /std:c11 /W4 /I$root /Fe:$stm32VisionExecutable $stm32VisionSources
     }
 } elseif (Get-Command gcc.exe -ErrorAction SilentlyContinue) {
-    & gcc.exe -std=c11 -Wall -Wextra -Werror -DGIMBAL_MOTION_ENABLED=1 -I$root -o $gccExecutable $sources
+    & gcc.exe -std=c11 -Wall -Wextra -Werror -DGIMBAL_MOTION_ENABLED=1 -DGIMBAL_YAW_ONLY_TEST_ENABLED=0 -I$root -o $gccExecutable $sources
     if ($LASTEXITCODE -eq 0) {
-        & gcc.exe -std=c11 -Wall -Wextra -Werror -I$root -o $gccLockExecutable $lockSources
+        & gcc.exe -std=c11 -Wall -Wextra -Werror -DGIMBAL_YAW_ONLY_TEST_ENABLED=0 -I$root -o $gccLockExecutable $lockSources
     }
     if ($LASTEXITCODE -eq 0) {
         & gcc.exe -std=c11 -Wall -Wextra -Werror -I$root -o $gccStm32VisionExecutable $stm32VisionSources
@@ -120,9 +120,9 @@ if (Get-Command cl.exe -ErrorAction SilentlyContinue) {
 
     Write-Host "No runnable host C compiler found; using ARMCLANG for compile-only checks."
     Invoke-ArmclangCompileSet -Compiler $armclang -CompileSources $sources `
-        -ObjectSubdir "armclang-enabled" -Defines @("-DGIMBAL_MOTION_ENABLED=1")
+        -ObjectSubdir "armclang-enabled" -Defines @("-DGIMBAL_MOTION_ENABLED=1", "-DGIMBAL_YAW_ONLY_TEST_ENABLED=0")
     Invoke-ArmclangCompileSet -Compiler $armclang -CompileSources $lockSources `
-        -ObjectSubdir "armclang-locked" -Defines @()
+        -ObjectSubdir "armclang-locked" -Defines @("-DGIMBAL_YAW_ONLY_TEST_ENABLED=0")
     Invoke-ArmclangCompileSet -Compiler $armclang -CompileSources $stm32VisionSources `
         -ObjectSubdir "armclang-stm32-vision" -Defines @()
     Write-Host "ARMCLANG compile-only checks passed. Host executables were not run."

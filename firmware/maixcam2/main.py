@@ -20,6 +20,8 @@ Temporary vision sign convention:
     pitch > 0 means the target is above the image center.
 """
 
+import math
+
 from maix import err, pinmap, time, uart
 
 try:
@@ -32,7 +34,7 @@ except Exception:
 
 UART_DEVICE = "/dev/ttyS4"
 BAUDRATE = 115200
-TX_INTERVAL_MS = 50
+TX_INTERVAL_MS = 40
 
 # Run modes:
 #   "color" sends real color-blob vision data.
@@ -48,8 +50,8 @@ FRAME_HEIGHT = 480
 
 # Rough first-test camera field of view. These only convert pixel error into a
 # readable angle estimate; tune them later with real target geometry.
-HORIZONTAL_FOV_DEG = 70.0
-VERTICAL_FOV_DEG = 43.0
+HORIZONTAL_FOV_DEG = 90.0
+VERTICAL_FOV_DEG = 51.0
 
 # MaixPy find_blobs LAB threshold. This default is for a saturated red PCB.
 # The A channel lower bound is intentionally high to reject skin color when a
@@ -59,8 +61,8 @@ COLOR_THRESHOLDS = [
     [10, 90, 35, 80, 0, 70],
 ]
 
-MIN_PIXELS = 35
-MIN_AREA = 35
+MIN_PIXELS = 18
+MIN_AREA = 18
 MIN_BLOB_W = 4
 MIN_BLOB_H = 4
 MAX_BLOB_W = FRAME_WIDTH // 2
@@ -68,13 +70,13 @@ MAX_BLOB_H = FRAME_HEIGHT // 2
 MAX_BLOB_AREA_X100 = 2200
 MIN_BLOB_DENSITY_X100 = 14
 MAX_ASPECT_RATIO_X100 = 450
-LOST_CONFIRM_FRAMES = 3
+LOST_CONFIRM_FRAMES = 2
 LOST_HEARTBEAT_EVERY = 20
 
 # Output stabilization. The camera runs at 20 Hz, so a small amount of
 # filtering removes color-threshold jitter without making the gimbal feel dead.
-TARGET_FILTER_ALPHA_X100 = 55
-TARGET_OUTPUT_STEP_LIMIT_0P01DEG = 550
+TARGET_FILTER_ALPHA_X100 = 72
+TARGET_OUTPUT_STEP_LIMIT_0P01DEG = 900
 TARGET_SNAP_DEADBAND_0P01DEG = 18
 TARGET_KEEP_CENTER_SCORE_PENALTY = 3
 
@@ -232,8 +234,13 @@ def target_from_blob(blob):
     cx = x + (w // 2)
     cy = y + (h // 2)
 
-    yaw_deg = ((cx - (FRAME_WIDTH / 2.0)) / FRAME_WIDTH) * HORIZONTAL_FOV_DEG
-    pitch_deg = (((FRAME_HEIGHT / 2.0) - cy) / FRAME_HEIGHT) * VERTICAL_FOV_DEG
+    # Perspective projection is important at the edge of a wide-angle lens.
+    # The previous linear conversion understated a far-off-center target,
+    # which made the yaw axis react too weakly for distant objects.
+    focal_x = (FRAME_WIDTH / 2.0) / math.tan(math.radians(HORIZONTAL_FOV_DEG / 2.0))
+    focal_y = (FRAME_HEIGHT / 2.0) / math.tan(math.radians(VERTICAL_FOV_DEG / 2.0))
+    yaw_deg = math.degrees(math.atan((cx - (FRAME_WIDTH / 2.0)) / focal_x))
+    pitch_deg = math.degrees(math.atan(((FRAME_HEIGHT / 2.0) - cy) / focal_y))
 
     area_ratio = float(max(0, w * h)) / float(FRAME_WIDTH * FRAME_HEIGHT)
     confidence = 5600 + int(min(area_ratio * 90000.0, 3900.0))
