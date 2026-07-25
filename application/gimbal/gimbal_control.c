@@ -223,7 +223,9 @@ void Gimbal_Init(Gimbal_Control *gimbal)
     gimbal->last_position_request_ms = 0U;
     gimbal->last_position_feedback_ms = 0U;
     gimbal->last_stop_ms = 0U;
+    gimbal->last_target_timestamp_ms = 0U;
     gimbal->last_position_update_count = X42S_GetPositionUpdateCount(X42S_YAW_MOTOR_ID);
+    gimbal->valid_target_count = 0U;
     gimbal->stop_refresh_count = 0U;
     gimbal->filter_ready = false;
 
@@ -263,12 +265,28 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
 #endif
 
     if (!MaixCAM_HasValidTarget(vision, now_ms)) {
+        gimbal->valid_target_count = 0U;
+        gimbal->last_target_timestamp_ms = 0U;
         stop_yaw_tracking(gimbal, now_ms, false);
         return;
     }
 
     target = MaixCAM_GetTarget(vision);
     if (target.confidence_0p01pct < GIMBAL_YAW_ONLY_CONF_MIN_0P01PCT) {
+        gimbal->valid_target_count = 0U;
+        gimbal->last_target_timestamp_ms = 0U;
+        stop_yaw_tracking(gimbal, now_ms, false);
+        return;
+    }
+
+    if (target.timestamp_ms != gimbal->last_target_timestamp_ms) {
+        gimbal->last_target_timestamp_ms = target.timestamp_ms;
+        if (gimbal->valid_target_count < GIMBAL_YAW_ONLY_VALID_FRAMES_MIN) {
+            gimbal->valid_target_count++;
+        }
+    }
+
+    if (gimbal->valid_target_count < GIMBAL_YAW_ONLY_VALID_FRAMES_MIN) {
         stop_yaw_tracking(gimbal, now_ms, false);
         return;
     }
