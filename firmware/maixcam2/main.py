@@ -41,25 +41,32 @@ TX_INTERVAL_MS = 50
 RUN_MODE = "color"
 SHOW_PREVIEW = True
 
-FRAME_WIDTH = 320
-FRAME_HEIGHT = 240
+# Use 640x480 for the real gimbal test. 320x240 is faster, but the far target
+# becomes too small and color blobs are easier to merge with the hand.
+FRAME_WIDTH = 640
+FRAME_HEIGHT = 480
 
 # Rough first-test camera field of view. These only convert pixel error into a
 # readable angle estimate; tune them later with real target geometry.
 HORIZONTAL_FOV_DEG = 70.0
 VERTICAL_FOV_DEG = 43.0
 
-# MaixPy find_blobs LAB threshold. This default is for a bright red target.
-# Tune in MaixVision/threshold editor if the target is not detected:
+# MaixPy find_blobs LAB threshold. This default is for a saturated red PCB.
+# The A channel lower bound is intentionally high to reject skin color when a
+# hand is holding the target. Tune in MaixVision/threshold editor if needed:
 # [L_min, L_max, A_min, A_max, B_min, B_max]
 COLOR_THRESHOLDS = [
-    [20, 100, 20, 80, 0, 80],
+    [10, 90, 35, 80, 0, 70],
 ]
 
 MIN_PIXELS = 35
 MIN_AREA = 35
 MIN_BLOB_W = 4
 MIN_BLOB_H = 4
+MAX_BLOB_W = FRAME_WIDTH // 2
+MAX_BLOB_H = FRAME_HEIGHT // 2
+MAX_BLOB_AREA_X100 = 2200
+MIN_BLOB_DENSITY_X100 = 14
 MAX_ASPECT_RATIO_X100 = 450
 LOST_CONFIRM_FRAMES = 3
 LOST_HEARTBEAT_EVERY = 20
@@ -164,10 +171,17 @@ def largest_blob(blobs):
 def blob_is_valid(blob):
     x, y, w, h = blob_rect(blob)
     pixels = blob_pixels(blob)
+    area = max(1, w * h)
 
     if w < MIN_BLOB_W or h < MIN_BLOB_H:
         return False
-    if pixels < MIN_PIXELS or (w * h) < MIN_AREA:
+    if w > MAX_BLOB_W or h > MAX_BLOB_H:
+        return False
+    if pixels < MIN_PIXELS or area < MIN_AREA:
+        return False
+    if (area * 100) // (FRAME_WIDTH * FRAME_HEIGHT) > MAX_BLOB_AREA_X100:
+        return False
+    if (pixels * 100) // area < MIN_BLOB_DENSITY_X100:
         return False
 
     larger = max(w, h)
@@ -352,7 +366,7 @@ def main():
                 COLOR_THRESHOLDS,
                 pixels_threshold=MIN_PIXELS,
                 area_threshold=MIN_AREA,
-                merge=True,
+                merge=False,
             )
             blob = select_target_blob(blobs, target_filter.rect)
 

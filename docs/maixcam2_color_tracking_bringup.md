@@ -18,6 +18,17 @@ Default mode:
 RUN_MODE = "color"
 ```
 
+Current camera resolution:
+
+```python
+FRAME_WIDTH = 640
+FRAME_HEIGHT = 480
+```
+
+This is clearer than the early `320x240` bring-up setting and is preferred for
+far-target gimbal tracking. If latency becomes more important than recognition
+range, temporarily switch back to `320x240`.
+
 Fallback modes:
 
 | Mode | Use |
@@ -43,16 +54,18 @@ Serial parameters:
 
 ## 3. Target Color
 
-The first version tracks a bright red target by LAB threshold:
+The current version tracks a saturated red PCB by LAB threshold:
 
 ```python
 COLOR_THRESHOLDS = [
-    [20, 100, 20, 80, 0, 80],
+    [10, 90, 35, 80, 0, 70],
 ]
 ```
 
 If detection is unstable, tune this threshold with MaixVision or a threshold
 editor. For first tests, use a large saturated red object under steady light.
+The `A_min = 35` value is intentionally strict so that skin color is less likely
+to be merged into the target box when the object is held by hand.
 
 The current MaixCAM2 script also applies a lightweight target stabilizer:
 
@@ -60,6 +73,7 @@ The current MaixCAM2 script also applies a lightweight target stabilizer:
 | --- | --- |
 | Minimum blob gate | Accepts smaller far targets than the first bring-up script |
 | Shape gate | Rejects very thin false blobs |
+| Size/density gate | Rejects very large low-density boxes, such as hand plus target |
 | Target selection | Prefers continuity with the previous target instead of always jumping to the largest blob |
 | Output smoothing | Filters yaw/pitch at 20 Hz and limits one-frame jumps |
 | Short dropout handling | Holds the last target for up to 2 missing frames, then sends `VISION,LOST` |
