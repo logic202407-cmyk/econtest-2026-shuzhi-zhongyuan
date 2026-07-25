@@ -56,9 +56,20 @@ COLOR_THRESHOLDS = [
     [20, 100, 20, 80, 0, 80],
 ]
 
-MIN_PIXELS = 60
-MIN_AREA = 60
+MIN_PIXELS = 35
+MIN_AREA = 35
+MIN_BLOB_W = 4
+MIN_BLOB_H = 4
+MAX_ASPECT_RATIO_X100 = 450
+LOST_CONFIRM_FRAMES = 3
 LOST_HEARTBEAT_EVERY = 20
+
+# Output stabilization. The camera runs at 20 Hz, so a small amount of
+# filtering removes color-threshold jitter without making the gimbal feel dead.
+TARGET_FILTER_ALPHA_X100 = 55
+TARGET_OUTPUT_STEP_LIMIT_0P01DEG = 550
+TARGET_SNAP_DEADBAND_0P01DEG = 18
+TARGET_KEEP_CENTER_SCORE_PENALTY = 3
 
 # yaw = 1.23 deg, pitch = -0.45 deg, confidence = 98.50%.
 # This exact frame is also used in docs/maixcam_protocol.md and host tests.
@@ -150,6 +161,58 @@ def largest_blob(blobs):
     return max(blobs, key=blob_pixels)
 
 
+def blob_is_valid(blob):
+    x, y, w, h = blob_rect(blob)
+    pixels = blob_pixels(blob)
+
+    if w < MIN_BLOB_W or h < MIN_BLOB_H:
+        return False
+    if pixels < MIN_PIXELS or (w * h) < MIN_AREA:
+        return False
+
+    larger = max(w, h)
+    smaller = max(1, min(w, h))
+    if (larger * 100) // smaller > MAX_ASPECT_RATIO_X100:
+        return False
+
+    return True
+
+
+def select_target_blob(blobs, previous_rect):
+    best_blob = None
+    best_score = None
+
+    if not blobs:
+        return None
+
+    previous_cx = None
+    previous_cy = None
+    if previous_rect is not None:
+        px, py, pw, ph = previous_rect
+        previous_cx = px + (pw // 2)
+        previous_cy = py + (ph // 2)
+
+    for blob in blobs:
+        if not blob_is_valid(blob):
+            continue
+
+        x, y, w, h = blob_rect(blob)
+        cx = x + (w // 2)
+        cy = y + (h // 2)
+        score = blob_pixels(blob) * 6 + (w * h)
+
+        if previous_cx is not None:
+            dx = cx - previous_cx
+            dy = cy - previous_cy
+            score -= (dx * dx + dy * dy) // TARGET_KEEP_CENTER_SCORE_PENALTY
+
+        if best_score is None or score > best_score:
+            best_score = score
+            best_blob = blob
+
+    return best_blob
+
+
 def target_from_blob(blob):
     x, y, w, h = blob_rect(blob)
     cx = x + (w // 2)
@@ -159,9 +222,70 @@ def target_from_blob(blob):
     pitch_deg = (((FRAME_HEIGHT / 2.0) - cy) / FRAME_HEIGHT) * VERTICAL_FOV_DEG
 
     area_ratio = float(max(0, w * h)) / float(FRAME_WIDTH * FRAME_HEIGHT)
-    confidence = 7000 + int(min(area_ratio * 60000.0, 2500.0))
+    confidence = 5600 + int(min(area_ratio * 90000.0, 3900.0))
 
     return int(yaw_deg * 100.0), int(pitch_deg * 100.0), confidence, (x, y, w, h)
+
+
+def limit_step(previous, current, step_limit):
+    delta = current - previous
+    if delta > step_limit:
+        return previous + step_limit
+    if delta < -step_limit:
+        return previous - step_limit
+    return current
+
+
+class TargetFilter:
+    def __init__(self):
+        self.valid = False
+        self.yaw = 0
+        self.pitch = 0
+        self.confidence = 0
+        self.rect = None
+        self.missing_frames = 0
+
+    def update_found(self, yaw, pitch, confidence, rect):
+        if not self.valid:
+            self.yaw = yaw
+            self.pitch = pitch
+            self.confidence = confidence
+            self.valid = True
+        else:
+            yaw = limit_step(self.yaw, yaw, TARGET_OUTPUT_STEP_LIMIT_0P01DEG)
+            pitch = limit_step(self.pitch, pitch, TARGET_OUTPUT_STEP_LIMIT_0P01DEG)
+
+            self.yaw = (
+                self.yaw * (100 - TARGET_FILTER_ALPHA_X100)
+                + yaw * TARGET_FILTER_ALPHA_X100
+            ) // 100
+            self.pitch = (
+                self.pitch * (100 - TARGET_FILTER_ALPHA_X100)
+                + pitch * TARGET_FILTER_ALPHA_X100
+            ) // 100
+            self.confidence = (
+                self.confidence * 40 + confidence * 60
+            ) // 100
+
+            if abs(self.yaw) < TARGET_SNAP_DEADBAND_0P01DEG:
+                self.yaw = 0
+            if abs(self.pitch) < TARGET_SNAP_DEADBAND_0P01DEG:
+                self.pitch = 0
+
+        self.rect = rect
+        self.missing_frames = 0
+        return self.yaw, self.pitch, self.confidence
+
+    def update_missing(self):
+        self.missing_frames += 1
+        if self.valid and self.missing_frames < LOST_CONFIRM_FRAMES:
+            confidence = max(0, self.confidence - self.missing_frames * 900)
+            return True, self.yaw, self.pitch, confidence, self.rect
+
+        self.valid = False
+        self.rect = None
+        self.confidence = 0
+        return False, 0, 0, 0, None
 
 
 def open_camera():
@@ -208,6 +332,7 @@ def main():
     serial = open_uart4()
     tick = 0
     lost_count = 0
+    target_filter = TargetFilter()
 
     if RUN_MODE == "color":
         cam = open_camera()
@@ -229,15 +354,23 @@ def main():
                 area_threshold=MIN_AREA,
                 merge=True,
             )
-            blob = largest_blob(blobs)
+            blob = select_target_blob(blobs, target_filter.rect)
 
             if blob is None:
-                frame = build_target_lost_frame()
-                lost_count += 1
-                rect = None
-                status = "TARGET LOST"
+                held, yaw, pitch, confidence, rect = target_filter.update_missing()
+                if held:
+                    frame = build_target_found_frame(yaw, pitch, confidence)
+                    status = "TARGET HOLD"
+                else:
+                    frame = build_target_lost_frame()
+                    lost_count += 1
+                    rect = None
+                    status = "TARGET LOST"
             else:
                 yaw, pitch, confidence, rect = target_from_blob(blob)
+                yaw, pitch, confidence = target_filter.update_found(
+                    yaw, pitch, confidence, rect
+                )
                 frame = build_target_found_frame(yaw, pitch, confidence)
                 lost_count = 0
                 status = "TARGET FOUND"

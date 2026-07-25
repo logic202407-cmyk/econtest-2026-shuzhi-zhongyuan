@@ -54,6 +54,19 @@ COLOR_THRESHOLDS = [
 If detection is unstable, tune this threshold with MaixVision or a threshold
 editor. For first tests, use a large saturated red object under steady light.
 
+The current MaixCAM2 script also applies a lightweight target stabilizer:
+
+| Item | Current behavior |
+| --- | --- |
+| Minimum blob gate | Accepts smaller far targets than the first bring-up script |
+| Shape gate | Rejects very thin false blobs |
+| Target selection | Prefers continuity with the previous target instead of always jumping to the largest blob |
+| Output smoothing | Filters yaw/pitch at 20 Hz and limits one-frame jumps |
+| Short dropout handling | Holds the last target for up to 2 missing frames, then sends `VISION,LOST` |
+
+This should reduce static target jitter and avoid brief single-frame losses
+without hiding a real target loss for long.
+
 ## 4. Expected TianMengXing Output
 
 Open the TianMengXing Type-C debug serial port at `115200 8N1`.
@@ -70,6 +83,9 @@ When no target is found:
 ```text
 VISION,LOST
 ```
+
+During a very short visual dropout, the script may continue sending the last
+target for about 100 ms before reporting lost. This is intentional filtering.
 
 If only `VISION,TIMEOUT` appears, check MaixCAM2 wiring and confirm the script
 is running. If output becomes unstable, keep `APP_VISION_RX_DEBUG_ENABLED`
