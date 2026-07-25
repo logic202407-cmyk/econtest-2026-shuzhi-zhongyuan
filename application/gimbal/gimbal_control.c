@@ -174,6 +174,37 @@ static int32_t filter_yaw_error_0p01deg(Gimbal_Control *gimbal,
         GIMBAL_YAW_ONLY_FILTER_SHIFT;
     return gimbal->filtered_yaw_0p01deg;
 }
+
+static void stop_yaw_tracking(Gimbal_Control *gimbal, uint32_t now_ms,
+                              bool force)
+{
+    bool should_send_stop = !gimbal->stopped ||
+                            gimbal->yaw_speed_0p1rpm != 0 ||
+                            (force && gimbal->stop_refresh_count == 0U);
+
+    if (!force && !should_send_stop && gimbal->stop_refresh_count < 3U &&
+        (uint32_t)(now_ms - gimbal->last_stop_ms) >=
+        GIMBAL_YAW_ONLY_STOP_REFRESH_MS) {
+        should_send_stop = true;
+    }
+
+    if (should_send_stop) {
+        X42S_SetSpeedEx(X42S_YAW_MOTOR_ID, 0, GIMBAL_YAW_ONLY_ACC_RPM_S,
+                        false);
+        if (force) {
+            X42S_Stop(X42S_YAW_MOTOR_ID);
+        }
+        gimbal->last_stop_ms = now_ms;
+        if (gimbal->stop_refresh_count < 3U) {
+            gimbal->stop_refresh_count++;
+        }
+    }
+
+    gimbal->stopped = true;
+    gimbal->filter_ready = false;
+    gimbal->previous_yaw_error_0p01deg = 0;
+    gimbal->yaw_speed_0p1rpm = 0;
+}
 #endif
 
 void Gimbal_Init(Gimbal_Control *gimbal)
@@ -191,7 +222,9 @@ void Gimbal_Init(Gimbal_Control *gimbal)
     gimbal->last_motion_ms = 0U;
     gimbal->last_position_request_ms = 0U;
     gimbal->last_position_feedback_ms = 0U;
+    gimbal->last_stop_ms = 0U;
     gimbal->last_position_update_count = X42S_GetPositionUpdateCount(X42S_YAW_MOTOR_ID);
+    gimbal->stop_refresh_count = 0U;
     gimbal->filter_ready = false;
 
 #if (GIMBAL_YAW_ONLY_TEST_ENABLED != 0U)
@@ -230,25 +263,13 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
 #endif
 
     if (!MaixCAM_HasValidTarget(vision, now_ms)) {
-        if (!gimbal->stopped || gimbal->yaw_speed_0p1rpm != 0) {
-            X42S_Stop(X42S_YAW_MOTOR_ID);
-        }
-        gimbal->stopped = true;
-        gimbal->filter_ready = false;
-        gimbal->previous_yaw_error_0p01deg = 0;
-        gimbal->yaw_speed_0p1rpm = 0;
+        stop_yaw_tracking(gimbal, now_ms, false);
         return;
     }
 
     target = MaixCAM_GetTarget(vision);
     if (target.confidence_0p01pct < GIMBAL_YAW_ONLY_CONF_MIN_0P01PCT) {
-        if (!gimbal->stopped || gimbal->yaw_speed_0p1rpm != 0) {
-            X42S_Stop(X42S_YAW_MOTOR_ID);
-        }
-        gimbal->stopped = true;
-        gimbal->filter_ready = false;
-        gimbal->previous_yaw_error_0p01deg = 0;
-        gimbal->yaw_speed_0p1rpm = 0;
+        stop_yaw_tracking(gimbal, now_ms, false);
         return;
     }
 
@@ -265,11 +286,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
 
 #if (GIMBAL_YAW_ONLY_SPEED_MODE != 0U)
     if (!update_yaw_only_position_feedback(gimbal, now_ms)) {
-        if (!gimbal->stopped || gimbal->yaw_speed_0p1rpm != 0) {
-            X42S_Stop(X42S_YAW_MOTOR_ID);
-        }
-        gimbal->yaw_speed_0p1rpm = 0;
-        gimbal->stopped = true;
+        stop_yaw_tracking(gimbal, now_ms, false);
         return;
     }
 
@@ -283,11 +300,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
          gimbal->yaw_position_0p1deg >= GIMBAL_YAW_ONLY_MAX_0P1DEG) ||
         (yaw_speed < 0 &&
          gimbal->yaw_position_0p1deg <= GIMBAL_YAW_ONLY_MIN_0P1DEG)) {
-        if (!gimbal->stopped || gimbal->yaw_speed_0p1rpm != 0) {
-            X42S_Stop(X42S_YAW_MOTOR_ID);
-        }
-        gimbal->yaw_speed_0p1rpm = 0;
-        gimbal->stopped = true;
+        stop_yaw_tracking(gimbal, now_ms, true);
         return;
     }
 
@@ -299,11 +312,11 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
 
     gimbal->yaw_speed_0p1rpm = yaw_speed;
     if (yaw_speed == 0) {
-        X42S_Stop(X42S_YAW_MOTOR_ID);
-        gimbal->stopped = true;
+        stop_yaw_tracking(gimbal, now_ms, true);
         return;
     }
 
+    gimbal->stop_refresh_count = 0U;
     X42S_SetSpeedEx(X42S_YAW_MOTOR_ID, yaw_speed,
                     GIMBAL_YAW_ONLY_ACC_RPM_S, false);
     gimbal->stopped = false;

@@ -22,7 +22,9 @@ typedef struct
     uint32_t last_motion_ms;
     uint32_t last_position_request_ms;
     uint32_t last_position_feedback_ms;
+    uint32_t last_stop_ms;
     uint16_t last_position_update_count;
+    uint8_t stop_refresh_count;
     bool filter_ready;
     bool stopped;
 } Gimbal_Control;
