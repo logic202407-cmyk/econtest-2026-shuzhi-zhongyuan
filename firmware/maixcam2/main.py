@@ -56,8 +56,8 @@ COLOR_THRESHOLDS = [
     [20, 100, 20, 80, 0, 80],
 ]
 
-MIN_PIXELS = 150
-MIN_AREA = 150
+MIN_PIXELS = 60
+MIN_AREA = 60
 LOST_HEARTBEAT_EVERY = 20
 
 # yaw = 1.23 deg, pitch = -0.45 deg, confidence = 98.50%.
@@ -159,7 +159,7 @@ def target_from_blob(blob):
     pitch_deg = (((FRAME_HEIGHT / 2.0) - cy) / FRAME_HEIGHT) * VERTICAL_FOV_DEG
 
     area_ratio = float(max(0, w * h)) / float(FRAME_WIDTH * FRAME_HEIGHT)
-    confidence = 5000 + int(min(area_ratio * 50000.0, 4500.0))
+    confidence = 7000 + int(min(area_ratio * 60000.0, 2500.0))
 
     return int(yaw_deg * 100.0), int(pitch_deg * 100.0), confidence, (x, y, w, h)
 
