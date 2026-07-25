@@ -259,6 +259,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
 #if (GIMBAL_YAW_ONLY_SPEED_MODE != 0U)
     int32_t yaw_speed;
     int32_t speed_delta;
+    int32_t yaw_error;
 #else
     int32_t yaw_correction;
     int32_t yaw_target;
@@ -313,8 +314,16 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
         return;
     }
 
-    yaw_speed = calc_yaw_only_speed_0p1rpm(gimbal,
-        filter_yaw_error_0p01deg(gimbal, target.yaw_0p01deg));
+    yaw_error = filter_yaw_error_0p01deg(gimbal, target.yaw_0p01deg);
+    if (gimbal->stopped &&
+        yaw_error > -GIMBAL_YAW_ONLY_START_DEADBAND_0P01DEG &&
+        yaw_error < GIMBAL_YAW_ONLY_START_DEADBAND_0P01DEG) {
+        gimbal->previous_yaw_error_0p01deg = yaw_error;
+        stop_yaw_tracking(gimbal, now_ms, true);
+        return;
+    }
+
+    yaw_speed = calc_yaw_only_speed_0p1rpm(gimbal, yaw_error);
     yaw_speed *= GIMBAL_YAW_VISION_TO_MOTOR_SIGN;
     yaw_speed = limit_yaw_only_speed_step(yaw_speed,
                                           gimbal->yaw_speed_0p1rpm);
