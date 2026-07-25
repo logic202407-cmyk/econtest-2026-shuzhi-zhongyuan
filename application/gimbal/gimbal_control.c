@@ -308,6 +308,12 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
 
     gimbal->last_update_ms = now_ms;
 
+    if (gimbal->stopped && gimbal->last_stop_ms != 0U &&
+        (uint32_t)(now_ms - gimbal->last_stop_ms) <
+        GIMBAL_YAW_ONLY_SETTLE_MS) {
+        return;
+    }
+
 #if (GIMBAL_YAW_ONLY_SPEED_MODE != 0U)
     if (!update_yaw_only_position_feedback(gimbal, now_ms)) {
         stop_yaw_tracking(gimbal, now_ms, false);
