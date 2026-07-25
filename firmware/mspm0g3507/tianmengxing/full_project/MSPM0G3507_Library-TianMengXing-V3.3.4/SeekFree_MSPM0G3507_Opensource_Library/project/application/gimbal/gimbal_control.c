@@ -255,6 +255,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
 
 #if (GIMBAL_YAW_ONLY_TEST_ENABLED != 0U)
     MaixCAM_Target target;
+    uint16_t confidence_min;
 #if (GIMBAL_YAW_ONLY_SPEED_MODE != 0U)
     int32_t yaw_speed;
     int32_t speed_delta;
@@ -272,7 +273,11 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
     }
 
     target = MaixCAM_GetTarget(vision);
-    if (target.confidence_0p01pct < GIMBAL_YAW_ONLY_CONF_MIN_0P01PCT) {
+    confidence_min = gimbal->stopped ?
+        GIMBAL_YAW_ONLY_CONF_START_MIN_0P01PCT :
+        GIMBAL_YAW_ONLY_CONF_MIN_0P01PCT;
+
+    if (target.confidence_0p01pct < confidence_min) {
         gimbal->valid_target_count = 0U;
         gimbal->last_target_timestamp_ms = 0U;
         stop_yaw_tracking(gimbal, now_ms, false);
