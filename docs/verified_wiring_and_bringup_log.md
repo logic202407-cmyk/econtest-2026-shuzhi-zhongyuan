@@ -186,3 +186,30 @@ Pitch: -20 deg to +20 deg
    is understood.
 4. Expand motion range only after cables, hard limits, and printed-frame
    direction are checked.
+
+## 10. 2026-07-25 Yaw Tracking Stable Baseline
+
+Commit `e056efc` is the current preferred yaw-axis tracking baseline.
+
+Observed behavior:
+
+| Case | Result |
+| --- | --- |
+| Target is static near center | Gimbal holds without continuous left-right oscillation |
+| Target overshoots center | Gimbal may make one reverse correction, then stops |
+| Target lost | Motor remains locked and no continued runaway motion is expected |
+| Moving target | Usable for continued tuning, but response speed and far-target stability can still improve |
+
+Key control choices in this baseline:
+
+| Parameter | Value | Purpose |
+| --- | --- | --- |
+| Center deadband | `6 deg` | Avoid jitter around the crosshair |
+| Restart deadband | `9 deg` | Avoid immediately reversing after a stop |
+| Stop settle time | `180 ms` | Let the mechanical system settle before restarting |
+| Yaw max speed | `12 rpm` | Keep motion smooth and safe |
+| Yaw min speed | `0.8 rpm` | Allow small corrections without jerky starts |
+
+Do not replace this baseline with a more aggressive setting unless the new
+version is tested against static target hold, sudden target stop, target loss,
+and far-target tracking.
