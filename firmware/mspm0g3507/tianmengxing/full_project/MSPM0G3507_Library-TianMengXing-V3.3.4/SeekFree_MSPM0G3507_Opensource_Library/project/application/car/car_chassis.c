@@ -55,6 +55,8 @@ static void configure_pwm_timer(GPTIMER_Regs *timer, uint32_t pin0_iomux,
                                 uint32_t pin0_function, uint32_t pin1_iomux,
                                 uint32_t pin1_function)
 {
+    // This is the same TimerG setup generated in the teammate's verified
+    // SysConfig project: 32 MHz / 8 / 40 = 100 kHz, period 1000 -> 100 Hz.
     static const DL_TimerG_ClockConfig clock_config = {
         .clockSel = DL_TIMER_CLOCK_BUSCLK,
         .divideRatio = DL_TIMER_CLOCK_DIVIDE_8,

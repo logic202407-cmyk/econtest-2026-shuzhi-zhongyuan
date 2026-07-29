@@ -28,7 +28,7 @@ hardware
 | 平台接口 | 逐飞索引 | TX / RX | 用途 |
 | --- | --- | --- | --- |
 | `PLATFORM_UART_DEBUG` | `UART_0` | PA10 / PA11 | CH340E 调试 |
-| `PLATFORM_UART_VISION` | `UART_1` | PA8 / PA9 | MaixCAM Pro |
+| `PLATFORM_UART_VISION` | `UART_1` | PA8 / PA9 | MaixCAM2 |
 | `PLATFORM_UART_MOTOR` | `UART_3` | B12 / B13 | X42S RS485 |
 
 平台层调用逐飞的 `uart_init()`、`uart_query_byte()`、`uart_write_buffer()`。接收使用 `uart_query_byte()`，不会启用或替换现有 UART 中断回调。

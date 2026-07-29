@@ -4,7 +4,7 @@
 
 ## 1. 角色定义
 
-- MaixCAM Pro：视觉数据发送端，必要时接收主控命令。
+- MaixCAM2：视觉数据发送端，必要时接收主控命令。
 - STM32F407：不限 M0 时的主控接收端。
 - MSPM0G3507：强制 M0 时的主控接收端。
 
@@ -27,10 +27,10 @@ MSPM0G3507 天猛星固定接线：
   链路   主控 UART   主控 TX   主控 RX   外设
   ---   ---   ---   ---   ---
   调试日志   UART0   PA10   PA11   板载 CH340E / Type-C
-  MaixCAM   UART1   PA8   PA9   MaixCAM Pro
+  MaixCAM2  UART1   A8    A9    MaixCAM2 A21 TX -> A9, A22 RX <- A8
   X42S RS485   UART3   B12   B13   RS485 收发器
 
-MaixCAM 具体接线为 `MaixCAM TX -> PA9 / UART1 RX`，`MaixCAM RX <- PA8 / UART1 TX`。首阶段只接收视觉数据时，PA8 可先不接。UART0 只用于调试，禁止再外接 MaixCAM 或 X42S。
+MaixCAM2 具体接线为 `MaixCAM2 A21 TX -> 天猛星 A9 / UART1 RX`，`MaixCAM2 A22 RX <- 天猛星 A8 / UART1 TX`。首阶段只接收视觉数据时，PA8 可先不接。UART0 只用于调试，禁止再外接 MaixCAM 或 X42S。
 
 ## 3. 串口参数
 

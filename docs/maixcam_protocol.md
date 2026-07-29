@@ -1,6 +1,6 @@
-# MaixCAM Pro 到 MSPM0G3507 二进制协议
+# MaixCAM2 到 MSPM0G3507 二进制协议
 
-本文定义云台链路的 MaixCAM Pro 到 MSPM0G3507 协议。它替代早期 `$V,...#` ASCII 假数据格式；早期格式仍保留在 `docs/uart_protocol.md`，用于 STM32 联调兼容和历史参考。
+本文定义云台链路的 MaixCAM2 到 MSPM0G3507 协议。它替代早期 `$V,...#` ASCII 假数据格式；早期格式仍保留在 `docs/uart_protocol.md`，用于 STM32 联调兼容和历史参考。
 
 ## 1. 链路参数
 

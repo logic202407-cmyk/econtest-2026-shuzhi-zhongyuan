@@ -36,16 +36,17 @@
 #define _zf_device_ips200pro_h_
 
 #include "zf_common_typedef.h"
+#include "app_config.h"
 
 
 #define IPS200PRO_SPI_SPEED      			    ( 30*1000*1000      	)   // 硬件 SPI 速率
-#define IPS200PRO_SPI_INDEX                	    ( SPI_0         		)   // 硬件 SPI 号
-#define IPS200PRO_CLK_PIN                  	    ( SPI0_SCK_A12  		)   // 硬件 SPI SCK 引脚
-#define IPS200PRO_MOSI_PIN                 	    ( SPI0_MOSI_A9  		)   // 硬件 SPI MOSI 引脚
-#define IPS200PRO_MISO_PIN                 	    ( SPI0_MISO_A13   		)   // 硬件 SPI MISO 引脚  TFT没有MISO引脚，但是这里任然需要定义，在spi的初始化时需要使用
-#define IPS200PRO_RST_PIN                  	    ( A7             		)   // 液晶复位引脚定义
-#define IPS200PRO_INT_PIN                  	    ( A15             		)   // 液晶命令位引脚定义
-#define IPS200PRO_CS_PIN                   	    ( A8             		)   // CS 片选引脚
+#define IPS200PRO_SPI_INDEX                	    ( APP_IPS200PRO_SPI_INDEX   )   // 硬件 SPI 号
+#define IPS200PRO_CLK_PIN                  	    ( APP_IPS200PRO_SCK_PIN     )   // 硬件 SPI SCK 引脚
+#define IPS200PRO_MOSI_PIN                 	    ( APP_IPS200PRO_MOSI_PIN    )   // 硬件 SPI MOSI 引脚
+#define IPS200PRO_MISO_PIN                 	    ( APP_IPS200PRO_MISO_PIN    )   // 硬件 SPI MISO 引脚  TFT没有MISO引脚，但是这里任然需要定义，在spi的初始化时需要使用
+#define IPS200PRO_RST_PIN                  	    ( APP_IPS200PRO_RST_PIN     )   // 液晶复位引脚定义
+#define IPS200PRO_INT_PIN                  	    ( APP_IPS200PRO_INT_PIN     )   // 液晶命令位引脚定义
+#define IPS200PRO_CS_PIN                   	    ( APP_IPS200PRO_CS_PIN      )   // CS 片选引脚
 
 #define IPS200PRO_WAIT_TIME                	    ( 900               	)   // 通讯等待时长，内部是软件延时，因此这里没有时间单位
 #define IPS200PRO_CRC_ENABLE                    ( 0                 	)   // 0：关闭CRC模式（通常关闭即可） 1：使能CRC模式，在传输的数据包中加入CRC校验，能提高屏幕的抗干扰的能力
@@ -769,4 +770,3 @@ uint16  ips200pro_init					(char *str, ips200pro_title_position_enum title_posit
 
 
 #endif
-

@@ -5,14 +5,14 @@
 在 **2026 年 7 月 22 日前** 跑通：
 
 ```text
-MaixCAM Pro -> UART -> STM32F407 / MSPM0G3507 -> OLED显示 / 按键 / 电流检测
+MaixCAM2 -> UART -> STM32F407 / MSPM0G3507 -> OLED显示 / 按键 / 电流检测
 ```
 
 ## 阶段拆分
 
 | 阶段 | 任务 | 输出 |
 | --- | --- | --- |
-| 1 | MaixCAM 发送假数据 | `firmware/maixcam/main.py` 周期输出协议帧 |
+| 1 | MaixCAM 发送假数据 | `firmware/maixcam2/main.py` 周期输出协议帧 |
 | 2 | 主控 UART 接收 | STM32F407 / MSPM0G3507 能收到完整 `$...#` 帧 |
 | 3 | 协议解析 | 解析 mode、cx、cy、w、h、D、x、angle、conf |
 | 4 | OLED 显示 | 显示模式、坐标、距离/偏移、置信度 |

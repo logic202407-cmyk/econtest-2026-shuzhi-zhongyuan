@@ -90,3 +90,21 @@ X42S_DEFAULT_ACC_RPM_S_CONFIG  = 50
 4. 缓慢移动到安全边界，记录软限位。
 5. 安装 MaixCAM、电缆和全部负载后，重新检查干涉、抖动、温升和电流。
 6. 最后接入真实视觉数据，先验证 500 ms 失目标停止，再扩大跟踪范围。
+
+## 6. 2026-07-23 双轴方向实测
+
+当前实物测试结果：
+
+| 轴 | 电机 ID | `+20 deg` 相对命令的实际运动 | 当前软件处理 |
+| --- | --- | --- | --- |
+| Pitch | ID1 | 低头 | `GIMBAL_PITCH_POSITIVE_IS_DOWN = 1U` |
+| Yaw | ID2 | 左转 | `GIMBAL_YAW_POSITIVE_IS_LEFT = 1U` |
+
+因此未来接入视觉闭环时，若视觉协议中正 yaw 表示目标在右侧、正 pitch 表示目标在上方，则电机命令需要反向：
+
+```c
+GIMBAL_PITCH_VISION_TO_MOTOR_SIGN = -1
+GIMBAL_YAW_VISION_TO_MOTOR_SIGN   = -1
+```
+
+目前只实测了 `+20 deg` 和 `-20 deg` 小角度相对运动，两轴均可到达并保持。因此自动控制软限位暂时收紧到 `-20 deg` 到 `+20 deg`，等确认机械零点、线束余量和硬限位后再扩大。

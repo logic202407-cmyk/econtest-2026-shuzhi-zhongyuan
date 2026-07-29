@@ -206,7 +206,7 @@ mapping:
 | Function | Peripheral or GPIO | Notes |
 | --- | --- | --- |
 | Debug serial | UART0, PA10 TX / PA11 RX | On-board CH340E and Type-C |
-| MaixCAM Pro | UART1, PA8 TX / PA9 RX | Vision protocol |
+| MaixCAM2 | UART1, PA8 TX / PA9 RX | Vision protocol |
 | X42S RS485 | UART3, B12 TX / B13 RX | Motor free protocol |
 | RS485 direction | B14 | Low: receive; high: transmit |
 | LED | PB22 | Board LED |

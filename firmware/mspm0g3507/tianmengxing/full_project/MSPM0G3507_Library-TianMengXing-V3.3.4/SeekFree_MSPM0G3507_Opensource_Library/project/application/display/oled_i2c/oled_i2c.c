@@ -150,6 +150,71 @@ void OledI2c_ShowString(uint8_t x, uint8_t page, const char *text)
     }
 }
 
+void OledI2c_ShowLargeString(uint8_t x, uint8_t page, const char *text,
+                             uint8_t scale)
+{
+    uint8_t pages;
+    uint8_t page_offset;
+    uint8_t src_col;
+    uint8_t src_row;
+    uint8_t sx;
+    uint8_t sy;
+    uint8_t out_x;
+    uint8_t dest_row;
+    uint8_t column_pages[3];
+    const uint8_t *font;
+
+    if (scale < 2U) {
+        scale = 2U;
+    } else if (scale > 3U) {
+        scale = 3U;
+    }
+
+    pages = (uint8_t)((7U * scale + 7U) / 8U);
+
+    while ((text != 0) && (*text != '\0') && (page < OLED_I2C_PAGES)) {
+        if (x > (OLED_I2C_WIDTH - (uint8_t)(6U * scale))) {
+            break;
+        }
+
+        font = font5x7(*text);
+        for (src_col = 0U; src_col < 6U; ++src_col) {
+            column_pages[0] = 0U;
+            column_pages[1] = 0U;
+            column_pages[2] = 0U;
+
+            if (src_col < 5U) {
+                for (src_row = 0U; src_row < 7U; ++src_row) {
+                    if ((font[src_col] & (uint8_t)(1U << src_row)) == 0U) {
+                        continue;
+                    }
+
+                    for (sy = 0U; sy < scale; ++sy) {
+                        dest_row = (uint8_t)(src_row * scale + sy);
+                        column_pages[dest_row / 8U] |=
+                            (uint8_t)(1U << (dest_row % 8U));
+                    }
+                }
+            }
+
+            for (sx = 0U; sx < scale; ++sx) {
+                out_x = (uint8_t)(x + src_col * scale + sx);
+                for (page_offset = 0U; page_offset < pages; ++page_offset) {
+                    if ((uint8_t)(page + page_offset) >= OLED_I2C_PAGES) {
+                        break;
+                    }
+                    oled_set_cursor(out_x, (uint8_t)(page + page_offset));
+                    oled_write(OLED_CONTROL_DATA,
+                               &column_pages[page_offset], 1U);
+                }
+            }
+        }
+
+        x = (uint8_t)(x + 6U * scale);
+        ++text;
+    }
+}
+
 void OledI2c_ShowInt(uint8_t x, uint8_t page, int32_t value, uint8_t width)
 {
     char buffer[12];

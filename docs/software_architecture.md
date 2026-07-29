@@ -1,7 +1,7 @@
 # MaixCAM + MSPM0 + X42S 软件架构
 
 ```text
-MaixCAM Pro --UART1--> vision/maixcam_protocol
+MaixCAM2 --UART1--> vision/maixcam_protocol
                                |
                                v
                         gimbal/gimbal_control

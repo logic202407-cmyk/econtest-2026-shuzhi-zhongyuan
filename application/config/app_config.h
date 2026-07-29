@@ -54,6 +54,7 @@
 // Optional 0.91 inch SSD1306 OLED, software IIC.
 #define APP_OLED_SOFT_IIC_SCL_PIN       B4
 #define APP_OLED_SOFT_IIC_SDA_PIN       B5
+#define APP_OLED_TIMER_SCREEN_ENABLED   1U
 
 // Backup car chassis: AT8236 dual DC motor driver.
 // These pins follow the teammate-verified car project.
@@ -63,12 +64,13 @@
 #define CAR_MOTOR_B_IN2_PWM_PIN         PWM_TIM_G7_CH1_A27
 #define CAR_MOTOR_PWM_FREQ_HZ           1000U
 #define CAR_MOTOR_PWM_MAX               1000U
-#define CAR_MOTOR_DEFAULT_TARGET_A_MMPS (-200)
-#define CAR_MOTOR_DEFAULT_TARGET_B_MMPS 200
-// Disabled in the yaw-only gimbal vision test build to stay under the
-// non-commercial Keil 32 KB limit. Re-enable for car-only bring-up builds.
+#define CAR_MOTOR_DEFAULT_TARGET_A_MMPS 0
+#define CAR_MOTOR_DEFAULT_TARGET_B_MMPS 0
+#define CAR_KEY_TEST_TARGET_A_MMPS      (-150)
+#define CAR_KEY_TEST_TARGET_B_MMPS      150
 #define CAR_MOTION_ENABLED              0U
 #define CAR_DEMO_AUTORUN_ENABLED        0U
+#define APP_CAR_KEY_TEST_ENABLED        0U
 
 // Backup car wheel encoders from the teammate-verified project.
 #define CAR_ENCODER_A1_PIN              A14
@@ -91,6 +93,15 @@
 #define CAR_GRAY_OUT6_PIN               B10
 #define CAR_GRAY_OUT7_PIN               A7
 
+// XV7001/XV7011 yaw gyro. Keep this bus separate from the OLED B4/B5 bus
+// and the A10/A11 Type-C debug UART.
+#define CAR_GYRO_ENABLED                1U
+#define CAR_GYRO_SOFT_IIC_SCL_PIN       A31
+#define CAR_GYRO_SOFT_IIC_SDA_PIN       A28
+#define CAR_GYRO_I2C_ADDRESS            0x6AU
+#define CAR_GYRO_SAMPLE_PERIOD_MS       5U
+#define CAR_GYRO_BIAS_SAMPLE_COUNT      400U
+
 // Analog/current-sense reserve pins for later expansion.
 #define APP_CURRENT_SENSE0_ADC_PIN      ADC1_CH4_B17
 #define APP_CURRENT_SENSE1_ADC_PIN      APP_PIN_UNASSIGNED
@@ -105,10 +116,28 @@
 #define TJC_SCREEN_WIDTH                800U
 #define TJC_SCREEN_HEIGHT               480U
 
+// SeekFree IPS2.0 PRO screen, SPI wiring for the E-problem bench.
+// This avoids A8/A9 so MaixCAM UART1 can remain connected.
+// Enable only when testing the IPS200Pro wiring; it overlaps car grayscale pins.
+#define APP_IPS200PRO_SCREEN_ENABLED    0U
+#define APP_IPS200PRO_SPI_INDEX         SPI_0
+#define APP_IPS200PRO_SCK_PIN           SPI0_SCK_B18
+#define APP_IPS200PRO_MOSI_PIN          SPI0_MOSI_B17
+#define APP_IPS200PRO_MISO_PIN          SPI0_MISO_B19
+#define APP_IPS200PRO_RST_PIN           A7
+#define APP_IPS200PRO_INT_PIN           A15
+#define APP_IPS200PRO_CS_PIN            B25
+#define APP_IPS200PRO_BOARD_SCK_LABEL   "B18"
+#define APP_IPS200PRO_BOARD_MOSI_LABEL  "B17"
+#define APP_IPS200PRO_BOARD_MISO_LABEL  "B19"
+#define APP_IPS200PRO_BOARD_RST_LABEL   "A7"
+#define APP_IPS200PRO_BOARD_INT_LABEL   "A15"
+#define APP_IPS200PRO_BOARD_CS_LABEL    "B25"
+
 // MaixCAM binary protocol timing.
 #define MAIXCAM_FRAME_HEADER_0          0xAAU
 #define MAIXCAM_FRAME_HEADER_1          0x55U
-#define MAIXCAM_REFRESH_PERIOD_MS       40U
+#define MAIXCAM_REFRESH_PERIOD_MS       50U
 #define MAIXCAM_TIMEOUT_MS              150U
 #define MAIXCAM_MAX_PAYLOAD_LEN         16U
 #define APP_UART_POLL_BUDGET             32U
@@ -124,8 +153,22 @@
 #define APP_MOTOR_RX_DEBUG_ENABLED       0U
 #define APP_GIMBAL_DEBUG_ENABLED         1U
 #define APP_GIMBAL_DEBUG_PERIOD_MS       200U
-#define APP_X42S_KEY_TEST_ENABLED        1U
+#define APP_SERVO_KEY_TEST_ENABLED       0U
+#define APP_X42S_KEY_TEST_ENABLED        0U
 #define APP_GIMBAL_RS485_TEST_BOOT_ENABLED 1U
+
+// Standard hobby-servo safety test on APP_AUX_PWM0_PIN (B2).
+// Use an external 5 V servo supply when needed, with GND tied to the board GND.
+// B21 cycles through the same angles as the automatic safety sweep.
+#define APP_SERVO_TEST_PWM_PIN           APP_AUX_PWM0_PIN
+#define APP_SERVO_TEST_PWM_FREQ_HZ       50U
+#define APP_SERVO_TEST_MIN_US            500U
+#define APP_SERVO_TEST_CENTER_US         1500U
+#define APP_SERVO_TEST_MAX_US            2500U
+#define APP_SERVO_TEST_START_DEG         90U
+#define APP_SERVO_TEST_STEP_DEG          45U
+#define APP_SERVO_TEST_AUTO_SWEEP_ENABLED 0U
+#define APP_SERVO_TEST_AUTO_SWEEP_MS     700U
 
 // X42S motor configuration.
 // Motor IDs, directions, zero points, and mechanical limits for the custom
@@ -155,7 +198,7 @@
 // First closed-loop vision test: lock both X42S motors, but move only ID2/Yaw.
 // Keep GIMBAL_MOTION_ENABLED disabled until full two-axis calibration is done.
 #ifndef GIMBAL_YAW_ONLY_TEST_ENABLED
-#define GIMBAL_YAW_ONLY_TEST_ENABLED     1U
+#define GIMBAL_YAW_ONLY_TEST_ENABLED     0U
 #endif
 #define GIMBAL_CONTROL_PERIOD_MS        20U
 #define GIMBAL_TARGET_LOST_TIMEOUT_MS   MAIXCAM_TIMEOUT_MS
@@ -182,26 +225,23 @@
 #define GIMBAL_YAW_ONLY_TARGET_HYST_0P1DEG 12
 #define GIMBAL_YAW_ONLY_CONF_MIN_0P01PCT 5200U
 #define GIMBAL_YAW_ONLY_CONF_START_MIN_0P01PCT 5500U
-#define GIMBAL_YAW_ONLY_VALID_FRAMES_MIN 2U
+#define GIMBAL_YAW_ONLY_VALID_FRAMES_MIN 1U
 #define GIMBAL_YAW_ONLY_ANGLE_GAIN_NUM  13
 #define GIMBAL_YAW_ONLY_ANGLE_GAIN_DEN  10
-#define GIMBAL_YAW_ONLY_FILTER_SHIFT    0U
+#define GIMBAL_YAW_ONLY_FILTER_SHIFT    1U
 #define GIMBAL_YAW_ONLY_ACC_RPM_S       70U
 #define GIMBAL_YAW_ONLY_SPEED_0P1_RPM   500U
 #define GIMBAL_YAW_ONLY_SPEED_MODE      1U
-#define GIMBAL_YAW_ONLY_SPEED_PERIOD_MS MAIXCAM_REFRESH_PERIOD_MS
+#define GIMBAL_YAW_ONLY_SPEED_PERIOD_MS 40U
 #define GIMBAL_YAW_ONLY_SPEED_MAX_0P1_RPM 120
 #define GIMBAL_YAW_ONLY_SPEED_MIN_0P1_RPM 8
 #define GIMBAL_YAW_ONLY_SPEED_KP_NUM    1
 #define GIMBAL_YAW_ONLY_SPEED_KP_DEN    12
-#define GIMBAL_YAW_ONLY_VISION_LEAD_MS  55U
-#define GIMBAL_YAW_ONLY_RATE_LIMIT_0P01DEG_S 12000
-#define GIMBAL_YAW_ONLY_SPEED_FF_NUM    1
-#define GIMBAL_YAW_ONLY_SPEED_FF_DEN    900
-#define GIMBAL_YAW_ONLY_SPEED_FF_LIMIT_0P1_RPM 45
+#define GIMBAL_YAW_ONLY_SPEED_KD_NUM    1
+#define GIMBAL_YAW_ONLY_SPEED_KD_DEN    5
 #define GIMBAL_YAW_ONLY_SPEED_HYST_0P1_RPM 8
 #define GIMBAL_YAW_ONLY_SPEED_STEP_0P1_RPM 15
-#define GIMBAL_YAW_ONLY_POS_REQ_MS      100U
+#define GIMBAL_YAW_ONLY_POS_REQ_MS      150U
 #define GIMBAL_YAW_ONLY_POS_FEEDBACK_TIMEOUT_MS 500U
 #define GIMBAL_YAW_ONLY_STOP_REFRESH_MS 50U
 

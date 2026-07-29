@@ -9,7 +9,7 @@
 | 用途 | UART | TX | RX | 参数 | 备注 |
 |-|-|-|-|-|-|
 | 调试日志 / Type-C CH340E | UART0 | PA10 | PA11 | 115200, 8N1 | 固定保留，不接外设 |
-| MaixCAM Pro | UART1 | PA8 | PA9 | 115200, 8N1, ASCII | MaixCAM TX 接 PA9；PA8 可选接 MaixCAM RX |
+| MaixCAM2 | UART1 | PA8 | PA9 | 115200, 8N1, ASCII | MaixCAM2 A21 TX 接天猛星 A9；天猛星 A8 可选接 MaixCAM2 A22 RX |
 | X42S RS485 | UART3 | B12 | B13 | 115200, 8N1, binary | B12 -> RS485 DI，B13 <- RS485 RO |
 
 建议 RS485 方向控制：

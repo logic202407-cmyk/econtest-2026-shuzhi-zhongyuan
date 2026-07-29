@@ -62,7 +62,7 @@
 | 用途 | UART | 引脚 | 处理 |
 | --- | --- | --- | --- |
 | 调试 | UART0 | PA10 TX / PA11 RX | 保留给板载 CH340E 和 Type-C，不外接业务模块 |
-| 视觉 | UART1 | PA8 TX / PA9 RX | 接 MaixCAM Pro，解析 `$...#` ASCII 协议 |
+| 视觉 | UART1 | A8 TX / A9 RX | 接 MaixCAM2，解析 `$...#` ASCII 协议 |
 | 电机 | UART3 | B12 TX / B13 RX | 接 X42S RS485 收发器，B14 可做 DE/RE |
 
 当前 X42S 使用 UART3 B12/B13，避开 B6-B9 板载 SPI Flash、B21 按键、B22 LED 和 SWD。最新冻结表以 docs/tianmengxing_expansion_pin_map.md 为准。

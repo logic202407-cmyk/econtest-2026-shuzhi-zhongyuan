@@ -62,10 +62,10 @@ static void encoder_b2_callback(uint32 event, void *ptr)
 void CarEncoder_Init(void)
 {
     CarEncoder_Reset();
-    exti_init(CAR_ENCODER_A1_PIN, EXTI_TRIGGER_BOTH, encoder_a1_callback, NULL);
-    exti_init(CAR_ENCODER_B1_PIN, EXTI_TRIGGER_BOTH, encoder_b1_callback, NULL);
-    exti_init(CAR_ENCODER_A2_PIN, EXTI_TRIGGER_BOTH, encoder_a2_callback, NULL);
-    exti_init(CAR_ENCODER_B2_PIN, EXTI_TRIGGER_BOTH, encoder_b2_callback, NULL);
+    exti_init(CAR_ENCODER_A1_PIN, EXTI_TRIGGER_RISING, encoder_a1_callback, NULL);
+    exti_init(CAR_ENCODER_B1_PIN, EXTI_TRIGGER_RISING, encoder_b1_callback, NULL);
+    exti_init(CAR_ENCODER_A2_PIN, EXTI_TRIGGER_RISING, encoder_a2_callback, NULL);
+    exti_init(CAR_ENCODER_B2_PIN, EXTI_TRIGGER_RISING, encoder_b2_callback, NULL);
 }
 
 void CarEncoder_Reset(void)

@@ -22,7 +22,7 @@ is shown only when it helps match driver code.
 | Function | Peripheral | Board pins | Notes |
 | --- | --- | --- | --- |
 | Debug log | UART0 | A10 TX / A11 RX | Board Type-C CH340E, 115200 8N1 |
-| MaixCAM Pro | UART1 | A8 TX / A9 RX | A8 has been TX-tested on the real board; A9 RX still needs loopback/USB-TTL verification |
+| MaixCAM2 | UART1 | A8 TX / A9 RX | A8 has been TX-tested on the real board; A9 RX still needs loopback/USB-TTL verification |
 | X42S RS485 | UART3 | B12 TX / B13 RX | Replaces the older B15/B16 UART2 plan; these pins are adjacent and easier for the extension board |
 | RS485 direction | GPIO | B14 | Optional; leave unconnected for automatic-direction RS485 modules |
 | TJC 7-inch screen | UART2 | B15 TX / B16 RX | Reserved for the tested `TJC8048X270_011N`, 115200 8N1 |
@@ -47,9 +47,14 @@ together and connect them to `B14`.
 | --- | --- | --- | --- |
 | 0.91 inch SSD1306 OLED | software IIC | B4 SCL / B5 SDA | Uses ordinary GPIO; does not consume a UART |
 | TJC 7-inch serial HMI | UART2 | B15 TX / B16 RX | Tested at 115200 through USB-TTL; command terminator is `FF FF FF` |
+| SeekFree IPS2.0 PRO | SPI0 | B18 SCK / B17 MOSI / B19 MISO / B25 CS / A7 RST / A15 INT | E-problem bench display only; disabled for H-problem car bring-up |
 
 The OLED is not part of the minimum gimbal motion loop. It is kept as a
 debug/status display interface.
+
+The IPS2.0 PRO allocation overlaps the H-problem car grayscale/current-sense
+reserve pins. For the H-problem car build, keep `APP_IPS200PRO_SCREEN_ENABLED`
+disabled and wire the grayscale sensor according to the car table below.
 
 ## 4. Backup Car Path
 
@@ -96,6 +101,24 @@ The teammate project also includes quadrature encoder inputs:
 | A wheel phase B | A15 |
 | B wheel phase A | A24 |
 | B wheel phase B | A25 |
+
+### Yaw Gyro
+
+The teammate project uses an XV7001/XV7011-compatible single-axis gyro. Its
+original A10/A11 software-IIC wiring conflicts with the TianMengXing Type-C
+debug UART and is therefore not imported. The integrated application keeps a
+separate software-IIC bus:
+
+| Signal | Board pin | Notes |
+| --- | --- | --- |
+| SCL | A31 | Dedicated gyro software-IIC clock |
+| SDA | A28 | Dedicated gyro software-IIC data |
+| VCC | 3.3V | Do not use 5V unless the gyro board explicitly supports it |
+| GND | GND | Common ground required |
+
+The driver samples every 5 ms and performs a non-blocking 400-sample bias
+calibration while the car remains stopped. A missing gyro changes its status to
+failed; it does not block the main loop or enable the motors.
 
 ## 5. Reserved Expansion
 

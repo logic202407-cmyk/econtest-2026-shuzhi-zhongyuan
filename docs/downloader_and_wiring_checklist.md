@@ -52,9 +52,9 @@
 
 UART0 固定作为调试串口，115200 8N1。上板后预期看到 `APP,INIT`、`VISION,FRAME`、`VISION,TIMEOUT` 等状态日志。
 
-### UART1 接 MaixCAM Pro
+### UART1 接 MaixCAM2
 
-| 天猛星 | MaixCAM Pro |
+| 天猛星 | MaixCAM2 |
 | --- | --- |
 | PA8 / UART1 TX | MaixCAM RX |
 | PA9 / UART1 RX | MaixCAM TX |

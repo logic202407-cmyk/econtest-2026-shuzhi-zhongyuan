@@ -5,6 +5,7 @@
 
 #include "app_main.h"
 #include "car/car_chassis.h"
+#include "car/car_gyro.h"
 #include "car/car_demo.h"
 #include "car/car_gray.h"
 #include "config/app_config.h"
@@ -22,6 +23,9 @@
 static MaixCAM_Parser g_vision_parser;
 static Gimbal_Control g_gimbal;
 static bool g_vision_timeout_reported;
+#if CAR_GYRO_ENABLED
+static uint8_t g_car_gyro_last_reported_status = 0xFFU;
+#endif
 #if APP_GIMBAL_DEBUG_ENABLED
 static uint32_t g_last_gimbal_debug_ms;
 #endif
@@ -148,6 +152,10 @@ void App_Init(void)
     CarGray_Init();
     CarChassis_Init();
 #endif
+#if CAR_GYRO_ENABLED
+    CarGyro_Init(App_GetMillis());
+    App_DebugLog("CAR,GYRO,INIT,A31-SCL,A28-SDA\r\n");
+#endif
 
     MaixCAM_ProtocolInit(&g_vision_parser);
     X42S_SetPortOps(&motor_port);
@@ -224,6 +232,18 @@ void App_MainLoopOnce(void)
     }
 
     Gimbal_Update(&g_gimbal, &g_vision_parser, now_ms);
+#if CAR_GYRO_ENABLED
+    CarGyro_Service(now_ms);
+    if (g_car_gyro_last_reported_status != (uint8_t)CarGyro_GetStatus()) {
+        char gyro_log[40];
+
+        g_car_gyro_last_reported_status = (uint8_t)CarGyro_GetStatus();
+        (void)snprintf(gyro_log, sizeof(gyro_log),
+                       "CAR,GYRO,STATUS,%u\r\n",
+                       (unsigned int)g_car_gyro_last_reported_status);
+        App_DebugLog(gyro_log);
+    }
+#endif
 #if APP_GIMBAL_DEBUG_ENABLED
     log_gimbal_state(now_ms);
 #endif

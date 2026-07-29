@@ -82,13 +82,10 @@ static int32_t limit_yaw_only_speed(int32_t speed_0p1rpm)
 }
 
 static int32_t calc_yaw_only_speed_0p1rpm(Gimbal_Control *gimbal,
-                                          int32_t error_0p01deg,
-                                          uint32_t sample_period_ms)
+                                          int32_t error_0p01deg)
 {
     int32_t previous_error = gimbal->previous_yaw_error_0p01deg;
-    int32_t rate_0p01deg_s;
-    int32_t prediction_0p01deg;
-    int32_t feedforward_0p1rpm;
+    int32_t derivative_0p01deg;
     int32_t speed_0p1rpm;
 
     if ((previous_error > 0 && error_0p01deg < 0) ||
@@ -103,35 +100,19 @@ static int32_t calc_yaw_only_speed_0p1rpm(Gimbal_Control *gimbal,
         return 0;
     }
 
-    if (sample_period_ms == 0U ||
-        GIMBAL_YAW_ONLY_SPEED_KP_DEN == 0 ||
-        GIMBAL_YAW_ONLY_SPEED_FF_DEN == 0) {
+    if (GIMBAL_YAW_ONLY_SPEED_KP_DEN == 0 ||
+        GIMBAL_YAW_ONLY_SPEED_KD_DEN == 0) {
         return 0;
     }
 
-    rate_0p01deg_s = ((error_0p01deg - previous_error) * 1000) /
-                     (int32_t)sample_period_ms;
-    rate_0p01deg_s = clamp_i32(rate_0p01deg_s,
-                                -GIMBAL_YAW_ONLY_RATE_LIMIT_0P01DEG_S,
-                                GIMBAL_YAW_ONLY_RATE_LIMIT_0P01DEG_S);
-    prediction_0p01deg = error_0p01deg +
-                          (rate_0p01deg_s *
-                           (int32_t)GIMBAL_YAW_ONLY_VISION_LEAD_MS) / 1000;
-    prediction_0p01deg = clamp_i32(prediction_0p01deg,
-                                   -32768, 32767);
+    derivative_0p01deg = error_0p01deg - previous_error;
     gimbal->previous_yaw_error_0p01deg = error_0p01deg;
-    gimbal->yaw_rate_0p01deg_s = rate_0p01deg_s;
-    gimbal->predicted_yaw_error_0p01deg = prediction_0p01deg;
 
-    speed_0p1rpm = (prediction_0p01deg * GIMBAL_YAW_ONLY_SPEED_KP_NUM) /
+    speed_0p1rpm = (error_0p01deg * GIMBAL_YAW_ONLY_SPEED_KP_NUM) /
                    GIMBAL_YAW_ONLY_SPEED_KP_DEN;
-    feedforward_0p1rpm = (rate_0p01deg_s *
-                           GIMBAL_YAW_ONLY_SPEED_FF_NUM) /
-                          GIMBAL_YAW_ONLY_SPEED_FF_DEN;
-    feedforward_0p1rpm = clamp_i32(feedforward_0p1rpm,
-                                   -GIMBAL_YAW_ONLY_SPEED_FF_LIMIT_0P1_RPM,
-                                   GIMBAL_YAW_ONLY_SPEED_FF_LIMIT_0P1_RPM);
-    speed_0p1rpm += feedforward_0p1rpm;
+    speed_0p1rpm +=
+        (derivative_0p01deg * GIMBAL_YAW_ONLY_SPEED_KD_NUM) /
+        GIMBAL_YAW_ONLY_SPEED_KD_DEN;
 
     if (speed_0p1rpm > 0 &&
         speed_0p1rpm < GIMBAL_YAW_ONLY_SPEED_MIN_0P1_RPM) {
@@ -238,8 +219,6 @@ static void stop_yaw_tracking(Gimbal_Control *gimbal, uint32_t now_ms,
     gimbal->stopped = true;
     gimbal->filter_ready = false;
     gimbal->previous_yaw_error_0p01deg = 0;
-    gimbal->yaw_rate_0p01deg_s = 0;
-    gimbal->predicted_yaw_error_0p01deg = 0;
     gimbal->yaw_speed_0p1rpm = 0;
 }
 #endif
@@ -255,8 +234,6 @@ void Gimbal_Init(Gimbal_Control *gimbal)
     gimbal->pitch_position_0p1deg = 0;
     gimbal->filtered_yaw_0p01deg = 0;
     gimbal->previous_yaw_error_0p01deg = 0;
-    gimbal->yaw_rate_0p01deg_s = 0;
-    gimbal->predicted_yaw_error_0p01deg = 0;
     gimbal->yaw_speed_0p1rpm = 0;
     gimbal->last_update_ms = 0U;
     gimbal->last_motion_ms = 0U;
@@ -264,7 +241,6 @@ void Gimbal_Init(Gimbal_Control *gimbal)
     gimbal->last_position_feedback_ms = 0U;
     gimbal->last_stop_ms = 0U;
     gimbal->last_target_timestamp_ms = 0U;
-    gimbal->last_control_target_timestamp_ms = 0U;
     gimbal->last_position_update_count = X42S_GetPositionUpdateCount(X42S_YAW_MOTOR_ID);
     gimbal->valid_target_count = 0U;
     gimbal->stop_refresh_count = 0U;
@@ -310,8 +286,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
     if (!MaixCAM_HasValidTarget(vision, now_ms)) {
         gimbal->valid_target_count = 0U;
         gimbal->last_target_timestamp_ms = 0U;
-        gimbal->last_control_target_timestamp_ms = 0U;
-        stop_yaw_tracking(gimbal, now_ms, false);
+        stop_yaw_tracking(gimbal, now_ms, true);
         return;
     }
 
@@ -323,8 +298,7 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
     if (target.confidence_0p01pct < confidence_min) {
         gimbal->valid_target_count = 0U;
         gimbal->last_target_timestamp_ms = 0U;
-        gimbal->last_control_target_timestamp_ms = 0U;
-        stop_yaw_tracking(gimbal, now_ms, false);
+        stop_yaw_tracking(gimbal, now_ms, true);
         return;
     }
 
@@ -340,75 +314,67 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
         return;
     }
 
-    /* Vision is the outer-loop sensor. Do not apply the same image error
-     * twice: one newly received frame produces at most one motor command. */
-    if (target.timestamp_ms == gimbal->last_control_target_timestamp_ms) {
+    if ((uint32_t)(now_ms - gimbal->last_update_ms) <
+#if (GIMBAL_YAW_ONLY_SPEED_MODE != 0U)
+        GIMBAL_YAW_ONLY_SPEED_PERIOD_MS) {
+#else
+        GIMBAL_YAW_ONLY_PERIOD_MS) {
+#endif
         return;
     }
 
-    {
-        uint32_t sample_period_ms = GIMBAL_YAW_ONLY_SPEED_PERIOD_MS;
+    gimbal->last_update_ms = now_ms;
 
-        if (gimbal->last_control_target_timestamp_ms != 0U) {
-            sample_period_ms = target.timestamp_ms -
-                               gimbal->last_control_target_timestamp_ms;
-        }
-        sample_period_ms = (uint32_t)clamp_i32((int32_t)sample_period_ms,
-                                               20, 120);
-        gimbal->last_control_target_timestamp_ms = target.timestamp_ms;
-        gimbal->last_update_ms = now_ms;
-
-        if (gimbal->stopped && gimbal->last_stop_ms != 0U &&
-            (uint32_t)(now_ms - gimbal->last_stop_ms) <
-            GIMBAL_YAW_ONLY_SETTLE_MS) {
-            return;
-        }
+    if (gimbal->stopped && gimbal->last_stop_ms != 0U &&
+        (uint32_t)(now_ms - gimbal->last_stop_ms) <
+        GIMBAL_YAW_ONLY_SETTLE_MS) {
+        return;
+    }
 
 #if (GIMBAL_YAW_ONLY_SPEED_MODE != 0U)
-        if (!update_yaw_only_position_feedback(gimbal, now_ms)) {
-            stop_yaw_tracking(gimbal, now_ms, false);
-            return;
-        }
+    if (!update_yaw_only_position_feedback(gimbal, now_ms)) {
+        stop_yaw_tracking(gimbal, now_ms, false);
+        return;
+    }
 
-        yaw_error = filter_yaw_error_0p01deg(gimbal, target.yaw_0p01deg);
-        if (gimbal->stopped &&
-            yaw_error > -GIMBAL_YAW_ONLY_START_DEADBAND_0P01DEG &&
-            yaw_error < GIMBAL_YAW_ONLY_START_DEADBAND_0P01DEG) {
-            gimbal->previous_yaw_error_0p01deg = yaw_error;
-            stop_yaw_tracking(gimbal, now_ms, true);
-            return;
-        }
+    yaw_error = filter_yaw_error_0p01deg(gimbal, target.yaw_0p01deg);
+    if (gimbal->stopped &&
+        yaw_error > -GIMBAL_YAW_ONLY_START_DEADBAND_0P01DEG &&
+        yaw_error < GIMBAL_YAW_ONLY_START_DEADBAND_0P01DEG) {
+        gimbal->previous_yaw_error_0p01deg = yaw_error;
+        stop_yaw_tracking(gimbal, now_ms, true);
+        return;
+    }
 
-        yaw_speed = calc_yaw_only_speed_0p1rpm(gimbal, yaw_error,
-                                                sample_period_ms);
-        yaw_speed *= GIMBAL_YAW_VISION_TO_MOTOR_SIGN;
-        yaw_speed = limit_yaw_only_speed_step(yaw_speed,
-                                              gimbal->yaw_speed_0p1rpm);
+    yaw_speed = calc_yaw_only_speed_0p1rpm(gimbal, yaw_error);
+    yaw_speed *= GIMBAL_YAW_VISION_TO_MOTOR_SIGN;
+    yaw_speed = limit_yaw_only_speed_step(yaw_speed,
+                                          gimbal->yaw_speed_0p1rpm);
 
-        if ((yaw_speed > 0 &&
-             gimbal->yaw_position_0p1deg >= GIMBAL_YAW_ONLY_MAX_0P1DEG) ||
-            (yaw_speed < 0 &&
-             gimbal->yaw_position_0p1deg <= GIMBAL_YAW_ONLY_MIN_0P1DEG)) {
-            stop_yaw_tracking(gimbal, now_ms, true);
-            return;
-        }
+    if ((yaw_speed > 0 &&
+         gimbal->yaw_position_0p1deg >= GIMBAL_YAW_ONLY_MAX_0P1DEG) ||
+        (yaw_speed < 0 &&
+         gimbal->yaw_position_0p1deg <= GIMBAL_YAW_ONLY_MIN_0P1DEG)) {
+        stop_yaw_tracking(gimbal, now_ms, true);
+        return;
+    }
 
-        speed_delta = yaw_speed - gimbal->yaw_speed_0p1rpm;
-        if (speed_delta > -GIMBAL_YAW_ONLY_SPEED_HYST_0P1_RPM &&
-            speed_delta < GIMBAL_YAW_ONLY_SPEED_HYST_0P1_RPM) {
-            return;
-        }
+    speed_delta = yaw_speed - gimbal->yaw_speed_0p1rpm;
+    if (speed_delta > -GIMBAL_YAW_ONLY_SPEED_HYST_0P1_RPM &&
+        speed_delta < GIMBAL_YAW_ONLY_SPEED_HYST_0P1_RPM) {
+        return;
+    }
 
-        gimbal->yaw_speed_0p1rpm = yaw_speed;
-        if (yaw_speed == 0) {
-            stop_yaw_tracking(gimbal, now_ms, true);
-            return;
-        }
+    gimbal->yaw_speed_0p1rpm = yaw_speed;
+    if (yaw_speed == 0) {
+        stop_yaw_tracking(gimbal, now_ms, true);
+        return;
+    }
 
-        gimbal->stop_refresh_count = 0U;
-        X42S_SetSpeedEx(X42S_YAW_MOTOR_ID, yaw_speed,
-                        GIMBAL_YAW_ONLY_ACC_RPM_S, false);
-        gimbal->stopped = false;
+    gimbal->stop_refresh_count = 0U;
+    X42S_SetSpeedEx(X42S_YAW_MOTOR_ID, yaw_speed,
+                    GIMBAL_YAW_ONLY_ACC_RPM_S, false);
+    gimbal->stopped = false;
 #else
     yaw_correction = calc_yaw_only_correction_0p1deg(
         filter_yaw_error_0p01deg(gimbal, target.yaw_0p01deg));
@@ -431,7 +397,6 @@ void Gimbal_Update(Gimbal_Control *gimbal, const MaixCAM_Parser *vision,
                        0U, false);
     gimbal->stopped = false;
 #endif
-    }
 #elif (GIMBAL_MOTION_ENABLED == 0U)
     (void)now_ms;
     return;

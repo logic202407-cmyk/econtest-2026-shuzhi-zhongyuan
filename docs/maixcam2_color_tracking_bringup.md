@@ -54,7 +54,7 @@ Serial parameters:
 
 ## 3. Target Color
 
-The current version tracks a saturated red PCB by LAB threshold:
+The current version tracks a saturated red target by LAB threshold:
 
 ```python
 COLOR_THRESHOLDS = [

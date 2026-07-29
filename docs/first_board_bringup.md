@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | 下载器 | XDS110 通过 SWD 连接 PA19、PA20、GND、3.3V VTref | 待填写 |
 | 调试串口 | CH340E/Type-C 枚举正常，UART0 使用 115200 8N1 | 待填写 |
-| MaixCAM | UART1：PA8 TX 到 MaixCAM RX，PA9 RX 到 MaixCAM TX，共地 | 待填写 |
+| MaixCAM | UART1：A8 TX 到 MaixCAM2 A22 RX，A9 RX 到 MaixCAM2 A21 TX，共地 | 待填写 |
 | RS485 | UART3：B12 TX 到模块 TXD，B13 RX 到模块 RXD；A/B 无反接 | 待填写 |
 | 电源 | 主控、RS485 和 X42S 的供电满足规格且共地 | 待填写 |
 | 初始安全状态 | `GIMBAL_MOTION_ENABLED == 0U` | 待填写 |
