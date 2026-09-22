@@ -11,6 +11,8 @@ application logic. It verifies:
   vision frames do not generate position commands.
 - STM32F407 Skystar standard-library ASCII vision parser compatibility with
   V1 frames, early MaixCAM fake data, and resynchronization after bad input.
+- H-problem ball-frame decoding, CW/CCW control sign, near-target braking,
+  edge recovery, explicit arm sequence, and blind-motion return-to-level.
 
 Run it from the repository root on a Windows machine with either Visual Studio
 Build Tools (`cl.exe`) or GCC (`gcc.exe`) available:

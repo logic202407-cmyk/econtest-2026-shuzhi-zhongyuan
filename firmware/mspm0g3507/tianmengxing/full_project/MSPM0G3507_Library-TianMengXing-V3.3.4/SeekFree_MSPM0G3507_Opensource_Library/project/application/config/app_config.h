@@ -51,36 +51,55 @@
 #define X42S_UART_BOARD_RX_LABEL        "B13"
 #define RS485_DE_BOARD_LABEL            "B14"
 
-// Optional 0.91 inch SSD1306 OLED, software IIC.
-#define APP_OLED_SOFT_IIC_SCL_PIN       B4
-#define APP_OLED_SOFT_IIC_SDA_PIN       B5
+// Teammate LK car-board OLED: software IIC, SDA=PA28 and SCL=PA31.
+// This is intentionally separate from the TianMengXing board's UART0.
+#define APP_OLED_SOFT_IIC_SCL_PIN       A31
+#define APP_OLED_SOFT_IIC_SDA_PIN       A28
 #define APP_OLED_TIMER_SCREEN_ENABLED   1U
 
 // Backup car chassis: AT8236 dual DC motor driver.
-// These pins follow the teammate-verified car project.
+// Right motor was rewired so the onboard K1/K2 keys can use PA26/PA25.
 #define CAR_MOTOR_A_IN1_PWM_PIN         PWM_TIM_G0_CH0_A12
 #define CAR_MOTOR_A_IN2_PWM_PIN         PWM_TIM_G0_CH1_A13
-#define CAR_MOTOR_B_IN1_PWM_PIN         PWM_TIM_G7_CH0_A26
+#define CAR_MOTOR_B_IN1_PWM_PIN         PWM_TIM_G7_CH0_B15
 #define CAR_MOTOR_B_IN2_PWM_PIN         PWM_TIM_G7_CH1_A27
 #define CAR_MOTOR_PWM_FREQ_HZ           1000U
 #define CAR_MOTOR_PWM_MAX               1000U
 #define CAR_MOTOR_DEFAULT_TARGET_A_MMPS 0
 #define CAR_MOTOR_DEFAULT_TARGET_B_MMPS 0
-#define CAR_KEY_TEST_TARGET_A_MMPS      (-150)
-#define CAR_KEY_TEST_TARGET_B_MMPS      150
-#define CAR_MOTION_ENABLED              0U
+#define CAR_KEY_TEST_TARGET_A_MMPS      250
+#define CAR_KEY_TEST_TARGET_B_MMPS      250
+#define CAR_MOTION_ENABLED              1U
 #define CAR_DEMO_AUTORUN_ENABLED        0U
+// B21 is owned by the match timer state machine. It starts/stops the car
+// together with timing so the recorded result matches the actual run.
 #define APP_CAR_KEY_TEST_ENABLED        0U
+#define APP_MATCH_TIMER_ENABLED          1U
+#define APP_MATCH_TIMER_DISPLAY_MS       50U
+#define APP_MATCH_KEY_ARM_MS              300U
+// Optional encoder-only diagnostic. The normal B21 match state machine owns
+// motor start/stop, so this remains disabled during ordinary runs.
+#define APP_CAR_ENCODER_TEST_ENABLED     0U
+// LK seven-channel grayscale line following is enabled after motor-direction
+// bring-up. B21 still remains the explicit start/stop control.
+#define CAR_LINE_FOLLOW_ENABLED          1U
 
 // Backup car wheel encoders from the teammate-verified project.
 #define CAR_ENCODER_A1_PIN              A14
 #define CAR_ENCODER_B1_PIN              A15
 #define CAR_ENCODER_A2_PIN              A24
-#define CAR_ENCODER_B2_PIN              A25
+#define CAR_ENCODER_B2_PIN              A17
 #define CAR_ENCODER_PULSES_PER_REV      890U
 #define CAR_ENCODER_WHEEL_DIAMETER_MM   67U
 #define CAR_ENCODER_WHEEL_CIRCUM_X1000  210486U
-#define CAR_ENCODER_SAMPLE_MS           50U
+// 20 ms keeps the car from travelling too far between line corrections at
+// 250 mm/s, while still providing enough encoder pulses for speed feedback.
+#define CAR_ENCODER_SAMPLE_MS           20U
+
+// TianMengXing expansion-board buttons. They are active-low and intentionally
+// separate from the B21 match timer key. They are inputs only for now.
+#define APP_EXPANSION_KEY1_PIN          A26
+#define APP_EXPANSION_KEY2_PIN          A25
 
 // Backup car line-following: RYDZ seven-channel grayscale sensor.
 // The module outputs seven digital signals. This follows the verified project.
@@ -93,9 +112,11 @@
 #define CAR_GRAY_OUT6_PIN               B10
 #define CAR_GRAY_OUT7_PIN               A7
 
-// XV7001/XV7011 yaw gyro. Keep this bus separate from the OLED B4/B5 bus
-// and the A10/A11 Type-C debug UART.
-#define CAR_GYRO_ENABLED                1U
+// LK's MPU6050 uses A10/A11, which conflicts with the TianMengXing UART0
+// debug connection. The previously-added XV7001 mapping also uses A28/A31,
+// now reserved for the OLED. Keep this driver disabled until the gyro bus is
+// reassigned and the actual sensor model is confirmed.
+#define CAR_GYRO_ENABLED                0U
 #define CAR_GYRO_SOFT_IIC_SCL_PIN       A31
 #define CAR_GYRO_SOFT_IIC_SDA_PIN       A28
 #define CAR_GYRO_I2C_ADDRESS            0x6AU
@@ -110,7 +131,8 @@
 #define APP_AUX_PWM0_PIN                PWM_TIM_G6_CH0_B2
 #define APP_AUX_PWM1_PIN                PWM_TIM_G6_CH1_B3
 
-// TJC 7-inch serial HMI screen.
+// TJC 7-inch serial HMI screen. UART2 TX B15 conflicts with the active
+// right-motor PWM, so this feature must remain disabled in the H-car build.
 #define TJC_SCREEN_ENABLED              0U
 #define TJC_SCREEN_MODEL                "TJC8048X270_011N"
 #define TJC_SCREEN_WIDTH                800U
@@ -148,10 +170,10 @@
 #define APP_BOARD_SELF_TEST_ENABLED      1U
 #define APP_BOARD_LED_HEARTBEAT_MS       500U
 #define APP_VISION_RX_DEBUG_ENABLED      0U
-#define APP_VISION_TX_SELF_TEST_ENABLED  1U
+#define APP_VISION_TX_SELF_TEST_ENABLED  0U
 #define APP_VISION_TX_SELF_TEST_MS       1000U
 #define APP_MOTOR_RX_DEBUG_ENABLED       0U
-#define APP_GIMBAL_DEBUG_ENABLED         1U
+#define APP_GIMBAL_DEBUG_ENABLED         0U
 #define APP_GIMBAL_DEBUG_PERIOD_MS       200U
 #define APP_SERVO_KEY_TEST_ENABLED       0U
 #define APP_X42S_KEY_TEST_ENABLED        0U

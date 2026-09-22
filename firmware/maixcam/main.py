@@ -1,5 +1,5 @@
 """
-MaixCAM Pro UART fake-data sender.
+Legacy MaixCAM UART fake-data sender.
 
 It periodically sends frames in the shared contest protocol:
     $V,mode,cx,cy,w,h,D,x,angle,conf#
@@ -60,4 +60,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

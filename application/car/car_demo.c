@@ -77,7 +77,7 @@ void CarDemo_Run(void)
                              CAR_MOTOR_DEFAULT_TARGET_B_MMPS);
 
     App_DebugLog("CAR,INIT,TianMengXing\r\n");
-    App_DebugLog("CAR,PINS,MOTOR=A12/A13,A26/A27,ENC=A14/A15,A24/A25,GRAY=B25/B24/B20/B18/B19/B10/A7\r\n");
+    App_DebugLog("CAR,PINS,MOTOR=A12/A13,B15/A27,ENC=A14/A15,A24/A17,GRAY=B25/B24/B20/B18/B19/B10/A7\r\n");
     OledI2c_ShowString(0U, 0U, "CAR INIT");
 
     while (1) {

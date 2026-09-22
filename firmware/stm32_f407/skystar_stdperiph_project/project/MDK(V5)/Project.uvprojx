@@ -340,7 +340,7 @@
               <MiscControls>-Wno-invalid-utf8</MiscControls>
               <Define>USE_STDPERIPH_DRIVER,STM32F40_41xxx,</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\app;..\..\board;..\..\bsp;..\..\libraries\CMSIS\Include;..\..\libraries\CMSIS\Device\ST\STM32F4xx\Include;..\..\libraries\STM32F4xx_StdPeriph_Driver\inc;..\..\module;..\..\bsp\uart;..\..\bsp\oled;..\..\bsp\key;..\..\bsp\motor</IncludePath>
+              <IncludePath>..\..\app;..\..\board;..\..\bsp;..\..\libraries\CMSIS\Include;..\..\libraries\CMSIS\Device\ST\STM32F4xx\Include;..\..\libraries\STM32F4xx_StdPeriph_Driver\inc;..\..\module;..\..\bsp\uart;..\..\bsp\oled;..\..\bsp\key;..\..\bsp\motor;..\..\bsp\tjc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -438,6 +438,11 @@
               <FileName>skystar_x42s.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\bsp\motor\skystar_x42s.c</FilePath>
+            </File>
+            <File>
+              <FileName>skystar_tjc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\bsp\tjc\skystar_tjc.c</FilePath>
             </File>
           </Files>
         </Group>

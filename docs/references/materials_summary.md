@@ -8,9 +8,9 @@
 
 | 成员 | 负责内容 | 优先阅读 |
 | --- | --- | --- |
-| 井 | MaixCAM2、视觉算法、视觉数据发送 | `docs/maixcam_protocol.md`、`firmware/maixcam2/main.py` |
-| 凯 | STM32F407、OLED、按键、执行机构 | `docs/uart_protocol.md`、`docs/x42s_rs485_analysis.md` |
-| 队长 | MSPM0G3507、采购、扩展板、系统集成 | `docs/hardware_interface.md`、`docs/platform_layer.md`、`firmware/mspm0g3507/tianmengxing/README.md` |
+| 视觉负责人 | MaixCAM2、视觉算法、视觉数据发送 | `docs/maixcam_protocol.md`、`firmware/maixcam2/main.py` |
+| STM32 与执行机构负责人 | STM32F407、OLED、按键、执行机构 | `docs/uart_protocol.md`、`docs/x42s_rs485_analysis.md` |
+| 系统集成负责人 | MSPM0G3507、采购、扩展板、系统集成 | `docs/hardware_interface.md`、`docs/platform_layer.md`、`firmware/mspm0g3507/tianmengxing/README.md` |
 
 ## 已冻结接口
 

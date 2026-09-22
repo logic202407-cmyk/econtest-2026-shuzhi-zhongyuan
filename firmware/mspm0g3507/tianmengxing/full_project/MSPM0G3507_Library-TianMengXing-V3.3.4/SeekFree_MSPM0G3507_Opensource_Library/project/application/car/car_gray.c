@@ -21,13 +21,13 @@ static const gpio_pin_enum g_gray_pins[CAR_GRAY_SENSOR_NUM] = {
 };
 
 static const int16_t g_gray_weight[CAR_GRAY_SENSOR_NUM] = {
-    -300,
-    -140,
-     -40,
+    -240,
+    -160,
+     -60,
        0,
-      40,
-     140,
-     300
+      60,
+     160,
+     240
 };
 
 void CarGray_Init(void)

@@ -38,7 +38,8 @@ def patch_keil_project(output_library: Path) -> None:
     text = project.read_text(encoding="utf-8")
     include = (
         r"..\application;..\application\config;..\application\platform;"
-        r"..\application\vision;..\application\motor\x42s_rs485;..\application\gimbal"
+        r"..\application\vision;..\application\motor\x42s_rs485;"
+        r"..\application\gimbal;..\application\balance"
     )
 
     target_include = re.compile(
@@ -47,33 +48,45 @@ def patch_keil_project(output_library: Path) -> None:
     include_match = target_include.search(text)
     if include_match is None:
         raise RuntimeError(f"Cannot locate target include path in {project}")
-    if r"..\application" not in include_match.group(1):
-        updated = include_match.group(1) + ";" + include
+    required_includes = include.split(";")
+    existing_includes = include_match.group(1).split(";")
+    missing_includes = [
+        item for item in required_includes if item not in existing_includes
+    ]
+    if missing_includes:
+        updated = include_match.group(1) + ";" + ";".join(missing_includes)
         text = text[:include_match.start(1)] + updated + text[include_match.end(1):]
 
-    if "<GroupName>application</GroupName>" not in text:
-        application = output_library / "project" / "application"
-        entries = []
-        for source in sorted(application.rglob("*")):
-            if source.suffix.lower() not in (".c", ".h"):
-                continue
-            relative = source.relative_to(application).as_posix().replace("/", "\\")
-            file_type = "1" if source.suffix.lower() == ".c" else "5"
-            entries.append(
-                "            <File>\n"
-                f"              <FileName>{source.name}</FileName>\n"
-                f"              <FileType>{file_type}</FileType>\n"
-                f"              <FilePath>..\\application\\{relative}</FilePath>\n"
-                "            </File>"
-            )
-        group = (
-            "        <Group>\n"
-            "          <GroupName>application</GroupName>\n"
-            "          <Files>\n"
-            + "\n".join(entries)
-            + "\n          </Files>\n"
-            "        </Group>\n"
+    application = output_library / "project" / "application"
+    entries = []
+    for source in sorted(application.rglob("*")):
+        if source.suffix.lower() not in (".c", ".h"):
+            continue
+        relative = source.relative_to(application).as_posix().replace("/", "\\")
+        file_type = "1" if source.suffix.lower() == ".c" else "5"
+        entries.append(
+            "            <File>\n"
+            f"              <FileName>{source.name}</FileName>\n"
+            f"              <FileType>{file_type}</FileType>\n"
+            f"              <FilePath>..\\application\\{relative}</FilePath>\n"
+            "            </File>"
         )
+    group = (
+        "        <Group>\n"
+        "          <GroupName>application</GroupName>\n"
+        "          <Files>\n"
+        + "\n".join(entries)
+        + "\n          </Files>\n"
+        "        </Group>\n"
+    )
+    application_group = re.compile(
+        r"        <Group>\s*<GroupName>application</GroupName>.*?"
+        r"        </Group>\s*",
+        re.DOTALL,
+    )
+    if application_group.search(text):
+        text = application_group.sub(lambda _match: group, text, count=1)
+    else:
         marker = "      </Groups>"
         if marker not in text:
             raise RuntimeError(f"Cannot locate group list in {project}")

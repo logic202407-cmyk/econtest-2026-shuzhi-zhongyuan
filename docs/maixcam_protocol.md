@@ -36,6 +36,8 @@ MaixCAM 仅发送识别结果；MSPM0 不在此协议中下发 AI 控制指令�
 | `0x02` | TARGET_LOST | 0 | 无 |
 | `0x03` | HEARTBEAT | 6 | `uptime_ms:uint32`、`seq:uint16` |
 | `0x04` | ERROR | 1 | `error_code:uint8` |
+| `0x10` | BALL_STATE | 16 | H题小球位置、速度、时序和质量标志 |
+| `0x11` | BALL_TARGET_SELECT | 2 | `target_position_0p01cm:int16` |
 
 `TARGET_FOUND` 中的 yaw、pitch 是相对画面中心的误差，正负方向由相机安装方向联调后一次性确认。`TARGET_LOST` 立即使目标无效；即使持续收到心跳，云台也不应继续跟踪旧目标。
 
@@ -44,6 +46,27 @@ MaixCAM 仅发送识别结果；MSPM0 不在此协议中下发 AI 控制指令�
 ```text
 AA 55 01 06 7B 00 D3 FF 7A 26 F4
 ```
+
+### H题 BALL_STATE
+
+`BALL_STATE` 的 16 字节负载全部为小端序：
+
+| 偏移 | 类型 | 含义 |
+| --- | --- | --- |
+| 0 | `uint16` | 帧序号 `seq` |
+| 2 | `uint32` | 相机采集时刻 `capture_ms` |
+| 6 | `int16` | 小球位置，单位 `0.01 cm` |
+| 8 | `int16` | 小球速度，单位 `0.01 cm/s` |
+| 10 | `uint16` | 置信度，单位 `0.01%` |
+| 12 | `uint16` | 从采集到发送的处理时间 `processing_ms` |
+| 14 | `uint8` | 状态标志 |
+| 15 | `uint8` | 检测来源 |
+
+状态标志：bit0=测量有效、bit1=速度有效、bit2=管道坐标已锁定、
+bit3=预测值。H题正式控制只接受非预测且管道已锁定的测量。
+
+H题坐标 `0 cm` 位于 X42S 升降端，位置向固定端增加。协议细节与控制安全状态见
+[H题小球平衡视觉与 X42S 闭环](h_balance_closed_loop.md)。
 
 ## 4. 超时和故障处理
 

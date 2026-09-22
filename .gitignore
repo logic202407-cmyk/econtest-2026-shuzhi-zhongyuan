@@ -7,6 +7,7 @@ venv/
 
 # Embedded build outputs
 build/
+build_*/
 dist/
 out/
 Debug/
@@ -32,3 +33,10 @@ Thumbs.db
 *.log
 tmp/
 temp/
+staging/
+deliverables/
+.codex-staging/
+.codex_staging/
+.codex_stage*/
+.codex_tmp*/
+*.codex_before_*

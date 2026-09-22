@@ -21,6 +21,7 @@ static int32_t g_last_speed[X42S_MAX_ID + 1U];
 static uint16_t g_position_update_count[X42S_MAX_ID + 1U];
 static uint8_t g_rx_buf[16];
 static uint8_t g_rx_len;
+static uint8_t g_rx_expected_len;
 static uint8_t g_last_reply_id;
 static uint8_t g_last_reply_command;
 static X42S_PortOps g_port_ops;
@@ -101,6 +102,29 @@ static uint32_t get_u32(const uint8_t *buf)
            ((uint32_t)buf[1] << 16) |
            ((uint32_t)buf[2] << 8) |
            (uint32_t)buf[3];
+}
+
+static uint8_t reply_length_for_command(uint8_t command)
+{
+    switch (command) {
+    case 0x35U:
+        return 6U;
+    case 0x36U:
+        return 8U;
+    case 0xF3U:
+    case 0xF6U:
+    case 0xFDU:
+    case 0xFEU:
+        return 4U;
+    default:
+        return 0U;
+    }
+}
+
+static void reset_rx(void)
+{
+    g_rx_len = 0U;
+    g_rx_expected_len = 0U;
 }
 
 static void send_frame(const uint8_t *frame, size_t len)
@@ -266,36 +290,54 @@ uint16_t X42S_GetPositionUpdateCount(uint8_t id)
 
 void X42S_OnRxByte(uint8_t byte)
 {
-    if (g_rx_len < sizeof(g_rx_buf)) {
-        g_rx_buf[g_rx_len++] = byte;
-    } else {
-        g_rx_len = 0;
-    }
+    uint8_t id;
+    uint8_t cmd;
 
-    if (byte != X42S_CHECK_FIXED) {
+    if (g_rx_len == 0U) {
+        if (byte == 0U || byte > X42S_MAX_ID) {
+            return;
+        }
+        g_rx_buf[g_rx_len++] = byte;
+        return;
+    }
+    if (g_rx_len >= sizeof(g_rx_buf)) {
+        reset_rx();
+        return;
+    }
+    g_rx_buf[g_rx_len++] = byte;
+
+    if (g_rx_len == 2U) {
+        g_rx_expected_len = reply_length_for_command(g_rx_buf[1]);
+        if (g_rx_expected_len == 0U) {
+            reset_rx();
+        }
+        return;
+    }
+    if (g_rx_len < g_rx_expected_len) {
+        return;
+    }
+    if (g_rx_len != g_rx_expected_len || byte != X42S_CHECK_FIXED) {
+        reset_rx();
         return;
     }
 
-    if (g_rx_len >= 2U) {
-        g_last_reply_id = g_rx_buf[0];
-        g_last_reply_command = g_rx_buf[1];
-    }
+    id = g_rx_buf[0];
+    cmd = g_rx_buf[1];
+    g_last_reply_id = id;
+    g_last_reply_command = cmd;
 
-    if (g_rx_len >= 6U) {
-        uint8_t id = g_rx_buf[0];
-        uint8_t cmd = g_rx_buf[1];
+    if (cmd == 0x35U) {
         uint8_t sign = g_rx_buf[2];
-
-        if (id <= X42S_MAX_ID && cmd == 0x35U && g_rx_len >= 6U) {
-            int32_t speed = (int32_t)get_u16(&g_rx_buf[3]);
-            g_last_speed[id] = sign ? -(speed * 10) : (speed * 10);
-        } else if (id <= X42S_MAX_ID && cmd == 0x36U && g_rx_len >= 8U) {
-            g_last_position[id] = encoder_counts_to_angle_0p1deg(get_u32(&g_rx_buf[3]), sign);
-            g_position_update_count[id]++;
-        }
+        int32_t speed = (int32_t)get_u16(&g_rx_buf[3]);
+        g_last_speed[id] = sign ? -(speed * 10) : (speed * 10);
+    } else if (cmd == 0x36U) {
+        uint8_t sign = g_rx_buf[2];
+        g_last_position[id] = encoder_counts_to_angle_0p1deg(
+            get_u32(&g_rx_buf[3]), sign);
+        g_position_update_count[id]++;
     }
 
-    g_rx_len = 0;
+    reset_rx();
 }
 
 X42S_WEAK void X42S_PortSend(const uint8_t *data, size_t len)

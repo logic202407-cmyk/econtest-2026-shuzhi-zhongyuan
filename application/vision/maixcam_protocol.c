@@ -41,6 +41,10 @@ static bool payload_len_is_valid(uint8_t cmd, uint8_t len)
         return len == 6U;
     case MAIXCAM_CMD_ERROR:
         return len == 1U;
+    case MAIXCAM_CMD_BALL_STATE:
+        return len == 16U;
+    case MAIXCAM_CMD_BALL_TARGET_SELECT:
+        return len == 2U;
     default:
         return false;
     }
@@ -58,6 +62,7 @@ static void reset_frame(MaixCAM_Parser *parser, uint8_t state)
 static bool apply_frame(MaixCAM_Parser *parser, uint32_t now_ms)
 {
     parser->last_frame_ms = now_ms;
+    parser->last_command = parser->cmd;
 
     switch (parser->cmd) {
     case MAIXCAM_CMD_TARGET_FOUND:
@@ -88,6 +93,37 @@ static bool apply_frame(MaixCAM_Parser *parser, uint32_t now_ms)
 
     case MAIXCAM_CMD_ERROR:
         parser->remote_error_code = parser->payload[0];
+        parser->last_error = MAIXCAM_ERROR_NONE;
+        return true;
+
+    case MAIXCAM_CMD_BALL_STATE:
+        parser->ball.seq = read_u16_le(&parser->payload[0]);
+        parser->ball.capture_ms = read_u32_le(&parser->payload[2]);
+        parser->ball.position_0p01cm = read_i16_le(&parser->payload[6]);
+        parser->ball.velocity_0p01cm_s = read_i16_le(&parser->payload[8]);
+        parser->ball.confidence_0p01pct = read_u16_le(&parser->payload[10]);
+        parser->ball.processing_ms = read_u16_le(&parser->payload[12]);
+        parser->ball.flags = parser->payload[14];
+        parser->ball.source = parser->payload[15];
+        parser->ball.valid =
+            (parser->ball.flags & MAIXCAM_BALL_FLAG_VALID) != 0U;
+        parser->ball.velocity_valid =
+            (parser->ball.flags & MAIXCAM_BALL_FLAG_VELOCITY_VALID) != 0U;
+        parser->ball.pipe_locked =
+            (parser->ball.flags & MAIXCAM_BALL_FLAG_PIPE_LOCKED) != 0U;
+        parser->ball.predicted =
+            (parser->ball.flags & MAIXCAM_BALL_FLAG_PREDICTED) != 0U;
+        parser->ball.timestamp_ms = now_ms;
+        if (parser->ball.valid) {
+            parser->last_valid_target_ms = now_ms;
+        }
+        parser->last_error = MAIXCAM_ERROR_NONE;
+        return true;
+
+    case MAIXCAM_CMD_BALL_TARGET_SELECT:
+        parser->target_position.position_0p01cm =
+            read_i16_le(&parser->payload[0]);
+        parser->target_position.timestamp_ms = now_ms;
         parser->last_error = MAIXCAM_ERROR_NONE;
         return true;
 
@@ -206,4 +242,23 @@ MaixCAM_Target MaixCAM_GetTarget(const MaixCAM_Parser *parser)
     }
 
     return parser->target;
+}
+
+bool MaixCAM_HasValidBall(const MaixCAM_Parser *parser, uint32_t now_ms)
+{
+    if (parser == NULL || !parser->ball.valid) {
+        return false;
+    }
+    return (uint32_t)(now_ms - parser->ball.timestamp_ms) <=
+           MAIXCAM_TIMEOUT_MS;
+}
+
+MaixCAM_BallState MaixCAM_GetBall(const MaixCAM_Parser *parser)
+{
+    MaixCAM_BallState empty = {0};
+
+    if (parser == NULL) {
+        return empty;
+    }
+    return parser->ball;
 }

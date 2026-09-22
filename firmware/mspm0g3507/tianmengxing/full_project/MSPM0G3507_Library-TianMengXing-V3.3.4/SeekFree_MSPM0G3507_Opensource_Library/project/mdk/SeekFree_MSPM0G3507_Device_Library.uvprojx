@@ -314,7 +314,7 @@
             </RvctStartVector></ArmAdsMisc>
           <Cads>
             <interw>1</interw>
-            <Optim>1</Optim>
+            <Optim>3</Optim>
             <oTime>0</oTime>
             <SplitLS>0</SplitLS>
             <OneElfS>1</OneElfS>
@@ -340,7 +340,7 @@
               <MiscControls>
 </MiscControls>              <Define>__MSPM0G3507__</Define>
               <Undefine>
-              </Undefine><IncludePath>..\..\libraries\sdk\third_party\CMSIS\Core\Include;..\..\libraries\sdk;..\..\libraries\sdk\ti_config;..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user\inc;..\code;..\application;..\application\config;..\application\platform;..\application\vision;..\application\motor\x42s_rs485;..\application\gimbal;..\application\car;..\application\display\tjc_screen</IncludePath>
+              </Undefine><IncludePath>..\..\libraries\sdk\third_party\CMSIS\Core\Include;..\..\libraries\sdk;..\..\libraries\sdk\ti_config;..\..\libraries\zf_common;..\..\libraries\zf_components;..\..\libraries\zf_device;..\..\libraries\zf_driver;..\user\inc;..\code;..\application;..\application\config;..\application\platform;..\application\vision;..\application\motor\x42s_rs485;..\application\gimbal;..\application\balance;..\application\car;..\application\display\tjc_screen</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1058,9 +1058,14 @@
               <FilePath>..\application\app_main.h</FilePath>
             </File>
             <File>
-              <FileName>app_config.h</FileName>
+              <FileName>h_balance_control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\balance\h_balance_control.c</FilePath>
+            </File>
+            <File>
+              <FileName>h_balance_control.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\application\config\app_config.h</FilePath>
+              <FilePath>..\application\balance\h_balance_control.h</FilePath>
             </File>
             <File>
               <FileName>car_chassis.c</FileName>
@@ -1073,6 +1078,26 @@
               <FilePath>..\application\car\car_chassis.h</FilePath>
             </File>
             <File>
+              <FileName>car_demo.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\car\car_demo.c</FilePath>
+            </File>
+            <File>
+              <FileName>car_demo.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\application\car\car_demo.h</FilePath>
+            </File>
+            <File>
+              <FileName>car_encoder.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\car\car_encoder.c</FilePath>
+            </File>
+            <File>
+              <FileName>car_encoder.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\application\car\car_encoder.h</FilePath>
+            </File>
+            <File>
               <FileName>car_gray.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\application\car\car_gray.c</FilePath>
@@ -1081,6 +1106,16 @@
               <FileName>car_gray.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\application\car\car_gray.h</FilePath>
+            </File>
+            <File>
+              <FileName>car_gyro.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\car\car_gyro.c</FilePath>
+            </File>
+            <File>
+              <FileName>car_gyro.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\application\car\car_gyro.h</FilePath>
             </File>
             <File>
               <FileName>car_line_follow.c</FileName>
@@ -1103,14 +1138,14 @@
               <FilePath>..\application\car\car_pid.h</FilePath>
             </File>
             <File>
-              <FileName>tjc_screen.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\display\tjc_screen\tjc_screen.c</FilePath>
+              <FileName>app_config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\application\config\app_config.h</FilePath>
             </File>
             <File>
-              <FileName>tjc_screen.h</FileName>
+              <FileName>h_balance_config.h</FileName>
               <FileType>5</FileType>
-              <FilePath>..\application\display\tjc_screen\tjc_screen.h</FilePath>
+              <FilePath>..\application\config\h_balance_config.h</FilePath>
             </File>
             <File>
               <FileName>oled_i2c.c</FileName>
@@ -1121,6 +1156,26 @@
               <FileName>oled_i2c.h</FileName>
               <FileType>5</FileType>
               <FilePath>..\application\display\oled_i2c\oled_i2c.h</FilePath>
+            </File>
+            <File>
+              <FileName>tjc_screen.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\display\tjc_screen\tjc_screen.c</FilePath>
+            </File>
+            <File>
+              <FileName>tjc_screen.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\application\display\tjc_screen\tjc_screen.h</FilePath>
+            </File>
+            <File>
+              <FileName>tjc_touch.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\application\display\tjc_screen\tjc_touch.c</FilePath>
+            </File>
+            <File>
+              <FileName>tjc_touch.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>..\application\display\tjc_screen\tjc_touch.h</FilePath>
             </File>
             <File>
               <FileName>gimbal_control.c</FileName>
@@ -1182,39 +1237,9 @@
               <FileType>5</FileType>
               <FilePath>..\application\vision\maixcam_protocol.h</FilePath>
             </File>
-            <File>
-              <FileName>car_demo.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\car\car_demo.c</FilePath>
-            </File>
-            <File>
-              <FileName>car_demo.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\application\car\car_demo.h</FilePath>
-            </File>
-            <File>
-              <FileName>car_encoder.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\car\car_encoder.c</FilePath>
-            </File>
-            <File>
-              <FileName>car_encoder.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\application\car\car_encoder.h</FilePath>
-            </File>
-            <File>
-              <FileName>car_gyro.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\application\car\car_gyro.c</FilePath>
-            </File>
-            <File>
-              <FileName>car_gyro.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\application\car\car_gyro.h</FilePath>
-            </File>
           </Files>
         </Group>
-      </Groups>
+</Groups>
     </Target>
   </Targets>
 

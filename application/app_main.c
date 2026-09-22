@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "app_main.h"
+#include "balance/h_balance_control.h"
 #include "car/car_chassis.h"
 #include "car/car_gyro.h"
 #include "car/car_demo.h"
@@ -22,7 +23,13 @@
 
 static MaixCAM_Parser g_vision_parser;
 static Gimbal_Control g_gimbal;
+static HBalance_Control g_h_balance;
 static bool g_vision_timeout_reported;
+static uint32_t g_last_ball_log_ms;
+static bool g_last_ball_log_valid;
+static HBalance_State g_last_balance_log_state;
+static HBalance_Fault g_last_balance_log_fault;
+static uint32_t g_last_balance_log_ms;
 #if CAR_GYRO_ENABLED
 static uint8_t g_car_gyro_last_reported_status = 0xFFU;
 #endif
@@ -53,6 +60,8 @@ APP_WEAK bool App_MotorReadByte(uint8_t *byte)
     return false;
 }
 
+APP_WEAK bool App_HBalanceArmKeyPressed(void) { return false; }
+
 /* This hook must return only after the motor UART has shifted the last byte. */
 APP_WEAK void App_MotorSend(const uint8_t *data, size_t len)
 {
@@ -82,9 +91,36 @@ static void motor_set_tx_enable(bool enable)
     App_Rs485SetTxEnable(enable);
 }
 
-static void log_vision_frame(const MaixCAM_Parser *parser)
+static void log_vision_frame(const MaixCAM_Parser *parser, uint32_t now_ms)
 {
-    char debug_message[96];
+    char debug_message[128];
+
+    if (parser->last_command == MAIXCAM_CMD_BALL_STATE) {
+        if (parser->ball.valid == g_last_ball_log_valid &&
+            (uint32_t)(now_ms - g_last_ball_log_ms) < 250U) {
+            return;
+        }
+        g_last_ball_log_ms = now_ms;
+        g_last_ball_log_valid = parser->ball.valid;
+        (void)snprintf(
+            debug_message, sizeof(debug_message),
+            "VISION,BALL,VALID,%u,SEQ,%u,POS,%d,VEL,%d,CONF,%u,FLAGS,%02X\r\n",
+            parser->ball.valid ? 1U : 0U,
+            (unsigned int)parser->ball.seq,
+            (int)parser->ball.position_0p01cm,
+            (int)parser->ball.velocity_0p01cm_s,
+            (unsigned int)parser->ball.confidence_0p01pct,
+            (unsigned int)parser->ball.flags);
+        App_DebugLog(debug_message);
+        return;
+    }
+    if (parser->last_command == MAIXCAM_CMD_BALL_TARGET_SELECT) {
+        (void)snprintf(debug_message, sizeof(debug_message),
+                       "VISION,BALL,TARGET,%d\r\n",
+                       (int)parser->target_position.position_0p01cm);
+        App_DebugLog(debug_message);
+        return;
+    }
 
     if (parser->target.valid) {
         long yaw = (long)parser->target.yaw_0p01deg;
@@ -106,6 +142,38 @@ static void log_vision_frame(const MaixCAM_Parser *parser)
                        "VISION,LOST\r\n");
     }
 
+    App_DebugLog(debug_message);
+}
+
+static void log_balance_state(uint32_t now_ms)
+{
+    char debug_message[144];
+    bool state_changed = g_h_balance.state != g_last_balance_log_state ||
+                         g_h_balance.fault != g_last_balance_log_fault;
+
+    if (!state_changed &&
+        (uint32_t)(now_ms - g_last_balance_log_ms) < 250U) {
+        return;
+    }
+    if (!state_changed &&
+        g_h_balance.state != H_BALANCE_STATE_ACTIVE &&
+        g_h_balance.state != H_BALANCE_STATE_SETTLED) {
+        return;
+    }
+
+    g_last_balance_log_state = g_h_balance.state;
+    g_last_balance_log_fault = g_h_balance.fault;
+    g_last_balance_log_ms = now_ms;
+    (void)snprintf(
+        debug_message, sizeof(debug_message),
+        "BAL,STATE,%u,FAULT,%u,TGT,%ld,POS,%ld,VEL,%ld,TILT,%ld,MOTOR,%ld\r\n",
+        (unsigned int)g_h_balance.state,
+        (unsigned int)g_h_balance.fault,
+        (long)g_h_balance.target_0p01cm,
+        (long)g_h_balance.estimated_position_0p01cm,
+        (long)g_h_balance.estimated_velocity_0p01cm_s,
+        (long)g_h_balance.requested_tilt_0p1deg,
+        (long)g_h_balance.motor_position_0p1deg);
     App_DebugLog(debug_message);
 }
 
@@ -160,7 +228,13 @@ void App_Init(void)
     MaixCAM_ProtocolInit(&g_vision_parser);
     X42S_SetPortOps(&motor_port);
     Gimbal_Init(&g_gimbal);
+    HBalance_Init(&g_h_balance);
     g_vision_timeout_reported = true;
+    g_last_ball_log_ms = 0U;
+    g_last_ball_log_valid = false;
+    g_last_balance_log_state = H_BALANCE_STATE_FAULT;
+    g_last_balance_log_fault = H_BALANCE_FAULT_INVALID_TARGET;
+    g_last_balance_log_ms = 0U;
 #if APP_GIMBAL_DEBUG_ENABLED
     g_last_gimbal_debug_ms = 0U;
 #endif
@@ -189,7 +263,7 @@ void App_MainLoopOnce(void)
 #endif
         if (MaixCAM_ProtocolInputByte(&g_vision_parser, byte, now_ms)) {
             g_vision_timeout_reported = false;
-            log_vision_frame(&g_vision_parser);
+            log_vision_frame(&g_vision_parser, now_ms);
         }
     }
 
@@ -232,6 +306,9 @@ void App_MainLoopOnce(void)
     }
 
     Gimbal_Update(&g_gimbal, &g_vision_parser, now_ms);
+    HBalance_SetArmKey(&g_h_balance, App_HBalanceArmKeyPressed(), now_ms);
+    HBalance_Update(&g_h_balance, &g_vision_parser, now_ms);
+    log_balance_state(now_ms);
 #if CAR_GYRO_ENABLED
     CarGyro_Service(now_ms);
     if (g_car_gyro_last_reported_status != (uint8_t)CarGyro_GetStatus()) {

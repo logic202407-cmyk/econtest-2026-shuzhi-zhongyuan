@@ -15,6 +15,7 @@
 #include "bsp_uart.h"
 #include "skystar_key.h"
 #include "skystar_oled.h"
+#include "skystar_tjc.h"
 #include "skystar_x42s.h"
 #include "vision_ascii_protocol.h"
 #include <stdio.h>
@@ -121,11 +122,12 @@ int main(void)
 	led_init();
 	SkystarKey_Init();
 	SkystarOled_Init();
+	SkystarTjc_Init();
 	SkystarX42S_Init();
 	VisionAscii_Init(&g_vision_parser);
 
 	printf("\r\nSKYSTAR F407 VISION UART DEMO\r\n");
-	printf("DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, X42S: USART3 PB10/PB11, KEY: PA0, OLED: PB8/PB9, 115200 8N1\r\n");
+	printf("DEBUG: USART1 PA9/PA10, MaixCAM: USART2 PA2/PA3, X42S: USART3 PB10/PB11, TJC reserve: USART6 PC6/PC7, KEY: PA0, OLED: PB8/PB9, 115200 8N1\r\n");
 	oled_show_waiting(key_count);
 	
 	while(1)

@@ -26,19 +26,19 @@
 
 ## 按分工获取
 
-### 井：MaixCAM 与视觉
+### 视觉负责人：MaixCAM 与视觉
 
 - 阅读 `docs/maixcam_protocol.md`，它是当前 MSPM0 云台链路的二进制协议基准。
 - 使用 MaixCAM2 的 `UART4`：`A21` 为 TX、`A22` 为 RX；所有 IO 按 3.3 V TTL 连接。
 - 假数据发送脚本在 `firmware/maixcam2/main.py`。
 
-### 凯：STM32、显示与执行机构
+### STM32 与执行机构负责人
 
 - 早期 ASCII 联调协议在 `docs/uart_protocol.md`。
 - X42S 通信结论、关键指令和 STM32 例程位置在 `docs/x42s_rs485_analysis.md`。
 - 队内共享包应包含 `ZDT_X42S第二代闭环步进电机用户手册V1.0.5_260527.pdf` 和 `9.例程_STM32F407`；厂商资料不直接提交到本仓库。
 
-### 队长：MSPM0、采购与系统集成
+### 系统集成负责人：MSPM0、采购与联调
 
 - 天猛星适配层与生成脚本在 `firmware/mspm0g3507/tianmengxing/`。
 - 先下载逐飞原始库，再按该目录 `README.md` 运行 `scripts/materialize.py` 生成完整 Keil 工程。

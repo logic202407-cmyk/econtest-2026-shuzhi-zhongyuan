@@ -173,6 +173,55 @@ void uart3_init(uint32_t __Baud)
 	NVIC_Init(&NVIC_InitStructure);
 }
 
+void uart6_init(uint32_t __Baud)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+	USART_InitTypeDef USART_InitStructure;
+	NVIC_InitTypeDef NVIC_InitStructure;
+
+	RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOC, ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART6, ENABLE);
+
+	GPIO_PinAFConfig(GPIOC, GPIO_PinSource6, GPIO_AF_USART6);
+	GPIO_PinAFConfig(GPIOC, GPIO_PinSource7, GPIO_AF_USART6);
+
+	GPIO_StructInit(&GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	GPIO_StructInit(&GPIO_InitStructure);
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_7;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_100MHz;
+	GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+	GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_UP;
+	GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+	USART_DeInit(USART6);
+	USART_StructInit(&USART_InitStructure);
+	USART_InitStructure.USART_BaudRate = __Baud;
+	USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+	USART_InitStructure.USART_StopBits = USART_StopBits_1;
+	USART_InitStructure.USART_Parity = USART_Parity_No;
+	USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+	USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+	USART_Init(USART6, &USART_InitStructure);
+
+	USART_ClearFlag(USART6, USART_FLAG_RXNE);
+	USART_ITConfig(USART6, USART_IT_RXNE, ENABLE);
+	USART_Cmd(USART6, ENABLE);
+
+	NVIC_InitStructure.NVIC_IRQChannel = USART6_IRQn;
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 4;
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+	NVIC_Init(&NVIC_InitStructure);
+}
+
 void uart3_send_bytes(const uint8_t *data, uint32_t len)
 {
 	uint32_t i;
@@ -184,6 +233,20 @@ void uart3_send_bytes(const uint8_t *data, uint32_t len)
 	}
 
 	while (RESET == USART_GetFlagStatus(USART3, USART_FLAG_TC)) {
+	}
+}
+
+void uart6_send_bytes(const uint8_t *data, uint32_t len)
+{
+	uint32_t i;
+
+	for (i = 0U; i < len; i++) {
+		USART_SendData(USART6, data[i]);
+		while (RESET == USART_GetFlagStatus(USART6, USART_FLAG_TXE)) {
+		}
+	}
+
+	while (RESET == USART_GetFlagStatus(USART6, USART_FLAG_TC)) {
 	}
 }
 
@@ -240,6 +303,11 @@ __weak void uart3_rx_callback(uint8_t data)
 	(void)data;
 }
 
+__weak void uart6_rx_callback(uint8_t data)
+{
+	(void)data;
+}
+
 void USART2_IRQHandler(void)
 {
 	if(USART_GetITStatus(USART2, USART_IT_RXNE) == SET)
@@ -257,6 +325,16 @@ void USART3_IRQHandler(void)
 		uint8_t data = (uint8_t)USART_ReceiveData(USART3);
 		uart3_rx_callback(data);
 		USART_ClearITPendingBit(USART3, USART_IT_RXNE);
+	}
+}
+
+void USART6_IRQHandler(void)
+{
+	if(USART_GetITStatus(USART6, USART_IT_RXNE) == SET)
+	{
+		uint8_t data = (uint8_t)USART_ReceiveData(USART6);
+		uart6_rx_callback(data);
+		USART_ClearITPendingBit(USART6, USART_IT_RXNE);
 	}
 }
 

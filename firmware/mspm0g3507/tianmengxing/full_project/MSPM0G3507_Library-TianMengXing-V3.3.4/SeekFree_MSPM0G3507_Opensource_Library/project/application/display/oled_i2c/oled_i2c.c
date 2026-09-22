@@ -15,6 +15,7 @@ static const uint8_t *font5x7(char ch)
 {
     static const uint8_t blank[5] = {0x00U, 0x00U, 0x00U, 0x00U, 0x00U};
     static const uint8_t minus[5] = {0x08U, 0x08U, 0x08U, 0x08U, 0x08U};
+    static const uint8_t dot[5] = {0x00U, 0x60U, 0x60U, 0x00U, 0x00U};
     static const uint8_t slash[5] = {0x20U, 0x10U, 0x08U, 0x04U, 0x02U};
     static const uint8_t colon[5] = {0x00U, 0x36U, 0x36U, 0x00U, 0x00U};
     static const uint8_t zero[5] = {0x3EU, 0x51U, 0x49U, 0x45U, 0x3EU};
@@ -30,16 +31,23 @@ static const uint8_t *font5x7(char ch)
     static const uint8_t a[5] = {0x7EU, 0x11U, 0x11U, 0x11U, 0x7EU};
     static const uint8_t b[5] = {0x7FU, 0x49U, 0x49U, 0x49U, 0x36U};
     static const uint8_t c[5] = {0x3EU, 0x41U, 0x41U, 0x41U, 0x22U};
+    static const uint8_t d[5] = {0x7FU, 0x41U, 0x41U, 0x22U, 0x1CU};
+    static const uint8_t e[5] = {0x7FU, 0x49U, 0x49U, 0x49U, 0x41U};
     static const uint8_t g[5] = {0x3EU, 0x41U, 0x49U, 0x49U, 0x7AU};
     static const uint8_t i[5] = {0x00U, 0x41U, 0x7FU, 0x41U, 0x00U};
     static const uint8_t m[5] = {0x7FU, 0x02U, 0x0CU, 0x02U, 0x7FU};
     static const uint8_t n[5] = {0x7FU, 0x04U, 0x08U, 0x10U, 0x7FU};
+    static const uint8_t o[5] = {0x3EU, 0x41U, 0x41U, 0x41U, 0x3EU};
+    static const uint8_t p[5] = {0x7FU, 0x09U, 0x09U, 0x09U, 0x06U};
     static const uint8_t r[5] = {0x7FU, 0x09U, 0x19U, 0x29U, 0x46U};
     static const uint8_t s[5] = {0x46U, 0x49U, 0x49U, 0x49U, 0x31U};
     static const uint8_t t[5] = {0x01U, 0x01U, 0x7FU, 0x01U, 0x01U};
+    static const uint8_t u[5] = {0x3FU, 0x40U, 0x40U, 0x40U, 0x3FU};
+    static const uint8_t y[5] = {0x07U, 0x08U, 0x70U, 0x08U, 0x07U};
 
     switch (ch) {
     case '-': return minus;
+    case '.': return dot;
     case '/': return slash;
     case ':': return colon;
     case '0': return zero;
@@ -55,13 +63,19 @@ static const uint8_t *font5x7(char ch)
     case 'A': return a;
     case 'B': return b;
     case 'C': return c;
+    case 'D': return d;
+    case 'E': return e;
     case 'G': return g;
     case 'I': return i;
     case 'M': return m;
     case 'N': return n;
+    case 'O': return o;
+    case 'P': return p;
     case 'R': return r;
     case 'S': return s;
     case 'T': return t;
+    case 'U': return u;
+    case 'Y': return y;
     default: return blank;
     }
 }

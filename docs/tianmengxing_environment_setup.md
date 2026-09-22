@@ -5,7 +5,8 @@ and lets Codex work on the tracked adaptation layer safely.
 
 ## 1. What This Environment Builds
 
-The repository does not store the full SeekFree upstream library. It stores:
+The repository stores both a reproducible adaptation layer and a generated
+full Keil workspace for teammate convenience. The maintained project content is:
 
 - TianMengXing board overlay and generation script:
   `firmware/mspm0g3507/tianmengxing/`
@@ -13,13 +14,16 @@ The repository does not store the full SeekFree upstream library. It stores:
   `application/`
 - Hardware, protocol, and architecture documentation:
   `docs/`
+- Generated full workspace:
+  `firmware/mspm0g3507/tianmengxing/full_project/`
 
 The generation script copies a separately downloaded SeekFree source tree to a
 new output directory, applies the TianMengXing overlay, adds `application/` to
 the Keil project, and patches the required SysConfig settings.
 
-Do not edit or overwrite the downloaded upstream source tree. Do not commit a
-generated full library directory to this repository.
+Do not edit or overwrite a separately downloaded upstream source tree. Do not
+commit additional generated workspaces or Keil build products; refresh only the
+tracked convenience workspace when application or overlay sources change.
 
 ## 2. Required Software
 
@@ -78,7 +82,7 @@ Clone this repository and switch to the active branch:
 ```powershell
 git clone https://github.com/logic202407-cmyk/econtest-2026-shuzhi-zhongyuan.git
 cd econtest-2026-shuzhi-zhongyuan
-git switch feat/tianmengxing-seekfree-v3.3.4
+git switch main
 ```
 
 The repository now includes a generated full Keil workspace for convenience.

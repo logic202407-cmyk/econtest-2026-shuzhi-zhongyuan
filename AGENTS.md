@@ -48,10 +48,10 @@ docs/verified_wiring_and_bringup_log.md
 
 ## 分支和工程入口
 
-默认工作分支：
+默认公开分支：
 
 ```text
-feat/tianmengxing-seekfree-v3.3.4
+main
 ```
 
 仓库已经包含生成好的完整 Keil 工程，队友可以直接打开：

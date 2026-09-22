@@ -23,12 +23,16 @@
 void uart1_init(uint32_t __Baud);
 void uart2_init(uint32_t __Baud);
 void uart3_init(uint32_t __Baud);
+void uart6_init(uint32_t __Baud);
 void uart3_send_bytes(const uint8_t *data, uint32_t len);
+void uart6_send_bytes(const uint8_t *data, uint32_t len);
 void uart2_rx_callback(uint8_t data);
 void uart3_rx_callback(uint8_t data);
+void uart6_rx_callback(uint8_t data);
 void USART1_IRQHandler(void);
 void USART2_IRQHandler(void);
 void USART3_IRQHandler(void);
+void USART6_IRQHandler(void);
  
  
  

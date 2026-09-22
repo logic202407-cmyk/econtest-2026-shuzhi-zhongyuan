@@ -8,6 +8,8 @@ void platform_gpio_init(void)
 {
     gpio_init(LED_PIN, GPO, GPIO_LOW, GPO_PUSH_PULL);
     gpio_init(KEY_PIN, GPI, GPIO_HIGH, GPI_PULL_UP);
+    gpio_init(APP_EXPANSION_KEY1_PIN, GPI, GPIO_HIGH, GPI_PULL_UP);
+    gpio_init(APP_EXPANSION_KEY2_PIN, GPI, GPIO_HIGH, GPI_PULL_UP);
     gpio_init(RS485_DE_PIN, GPO, RS485_DE_RX_LEVEL, GPO_PUSH_PULL);
 }
 
@@ -24,6 +26,11 @@ void platform_led_toggle(void)
 bool platform_key_read(void)
 {
     return gpio_get_level(KEY_PIN) == GPIO_LOW;
+}
+
+bool App_HBalanceArmKeyPressed(void)
+{
+    return gpio_get_level(APP_EXPANSION_KEY1_PIN) == GPIO_LOW;
 }
 
 void platform_rs485_set_tx_enable(bool enable)

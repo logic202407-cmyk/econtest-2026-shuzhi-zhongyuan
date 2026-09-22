@@ -1,5 +1,9 @@
 # TianMengXing Expansion Pin Map
 
+> **H题小车接线请优先使用 [H题当前引脚分配](h_problem_current_pin_map.md)。**
+> 本文件保留了早期云台和旧扩展板方案，其中的 `PA26/PA25` 右轮分配、
+> `PB15/PB16` 串口屏分配均不是当前 H 题有效接线。
+
 This document freezes the current TianMengXing MSPM0G3507 pin allocation for
 the vision/gimbal main path and the car backup path.
 

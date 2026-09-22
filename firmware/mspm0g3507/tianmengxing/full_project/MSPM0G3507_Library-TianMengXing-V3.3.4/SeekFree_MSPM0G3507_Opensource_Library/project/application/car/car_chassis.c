@@ -8,7 +8,7 @@
 #include "car_pid.h"
 
 #define CAR_PID_KP 0.7f
-#define CAR_PID_KI 0.9f
+#define CAR_PID_KI 0.36f
 #define CAR_PID_KD 0.0f
 #define CAR_PID_INTEGRAL_MIN (-6000)
 #define CAR_PID_INTEGRAL_MAX 6000
@@ -24,6 +24,7 @@ static int32_t g_output_b;
 static volatile uint8_t g_speed_updated;
 static volatile uint8_t g_control_enabled;
 static volatile uint8_t g_control_tick_ms;
+static volatile uint8_t g_chassis_initialized;
 
 static uint16_t limit_duty(int16_t speed)
 {
@@ -48,12 +49,13 @@ static void configure_pwm_channel(GPTIMER_Regs *timer, uint32_t channel)
         channel);
     DL_TimerG_setCaptCompUpdateMethod(timer,
         DL_TIMER_CC_UPDATE_METHOD_IMMEDIATE, channel);
-    DL_TimerG_setCaptureCompareValue(timer, CAR_MOTOR_PWM_MAX, channel);
+    // A PWM channel must come up at 0 duty. Starting at the period value can
+    // generate a full-duty pulse before CarChassis_StopAll() runs.
+    DL_TimerG_setCaptureCompareValue(timer, 0U, channel);
 }
 
-static void configure_pwm_timer(GPTIMER_Regs *timer, uint32_t pin0_iomux,
-                                uint32_t pin0_function, uint32_t pin1_iomux,
-                                uint32_t pin1_function)
+static void configure_pwm_timer(GPTIMER_Regs *timer, pwm_channel_enum pin0,
+                                pwm_channel_enum pin1)
 {
     // This is the same TimerG setup generated in the teammate's verified
     // SysConfig project: 32 MHz / 8 / 40 = 100 kHz, period 1000 -> 100 Hz.
@@ -72,8 +74,14 @@ static void configure_pwm_timer(GPTIMER_Regs *timer, uint32_t pin0_iomux,
     DL_TimerG_reset(timer);
     DL_TimerG_enablePower(timer);
     delay_cycles(16U);
-    DL_GPIO_initPeripheralOutputFunction(pin0_iomux, pin0_function);
-    DL_GPIO_initPeripheralOutputFunction(pin1_iomux, pin1_function);
+    // Decode the SeekFree PWM descriptors instead of hard-coding PINCM
+    // indexes. This keeps the timer setup aligned with the selected pins.
+    afio_init((gpio_pin_enum)(pin0 & PWM_PIN_INDEX_MASK), GPO,
+              (gpio_af_enum)((pin0 >> PWM_PIN_AF_OFFSET) & PWM_PIN_AF_MASK),
+              GPO_AF_PUSH_PULL);
+    afio_init((gpio_pin_enum)(pin1 & PWM_PIN_INDEX_MASK), GPO,
+              (gpio_af_enum)((pin1 >> PWM_PIN_AF_OFFSET) & PWM_PIN_AF_MASK),
+              GPO_AF_PUSH_PULL);
     DL_TimerG_setClockConfig(timer, (DL_TimerG_ClockConfig *)&clock_config);
     DL_TimerG_initPWMMode(timer, (DL_TimerG_PWMConfig *)&pwm_config);
     configure_pwm_channel(timer, DL_TIMERG_CAPTURE_COMPARE_0_INDEX);
@@ -94,14 +102,16 @@ void CarChassis_Init(void)
                 -(int32_t)CAR_MOTOR_PWM_MAX, (int32_t)CAR_MOTOR_PWM_MAX,
                 CAR_PID_INTEGRAL_MIN, CAR_PID_INTEGRAL_MAX);
 
-    configure_pwm_timer(TIMG0, IOMUX_PINCM34, IOMUX_PINCM34_PF_TIMG0_CCP0,
-                        IOMUX_PINCM35, IOMUX_PINCM35_PF_TIMG0_CCP1);
-    configure_pwm_timer(TIMG7, IOMUX_PINCM59, IOMUX_PINCM59_PF_TIMG7_CCP0,
-                        IOMUX_PINCM60, IOMUX_PINCM60_PF_TIMG7_CCP1);
+    configure_pwm_timer(TIMG0, CAR_MOTOR_A_IN1_PWM_PIN,
+                        CAR_MOTOR_A_IN2_PWM_PIN);
+    configure_pwm_timer(TIMG7, CAR_MOTOR_B_IN1_PWM_PIN,
+                        CAR_MOTOR_B_IN2_PWM_PIN);
     CarChassis_StopAll();
     g_speed_updated = 0U;
     g_control_tick_ms = 0U;
-    g_control_enabled = 1U;
+    // Do not let encoder or grayscale noise drive the wheels at power-on.
+    g_control_enabled = 0U;
+    g_chassis_initialized = 1U;
 }
 
 void CarChassis_SetMotorA(int16_t speed)
@@ -139,6 +149,9 @@ void CarChassis_SetMotorB(int16_t speed)
 void CarChassis_ControlTick1ms(void)
 {
     if (g_control_enabled == 0U) {
+        if (g_chassis_initialized != 0U) {
+            CarChassis_StopAll();
+        }
         return;
     }
 
@@ -155,21 +168,42 @@ void CarChassis_StopAll(void)
     CarChassis_SetMotorB(0);
 }
 
+void CarChassis_SetControlEnabled(uint8_t enabled)
+{
+    if (enabled == 0U) {
+        g_control_enabled = 0U;
+        g_control_tick_ms = 0U;
+        CarChassis_SetTargetMmps(0, 0);
+        CarPid_Reset(&g_pid_a);
+        CarPid_Reset(&g_pid_b);
+        CarChassis_StopAll();
+    } else {
+        g_control_tick_ms = 0U;
+        g_control_enabled = 1U;
+    }
+}
+
 void CarChassis_Service50ms(void)
 {
     int32_t target_a;
     int32_t target_b;
 
-    CarLineFollow_Update();
     CarEncoder_UpdateSpeed();
     g_feedback_a = CarEncoder_GetSpeedMmpsA();
     g_feedback_b = CarEncoder_GetSpeedMmpsB();
 
+#if CAR_LINE_FOLLOW_ENABLED
+    CarLineFollow_Update();
     target_a = CarLineFollow_ApplyCorrectionA(g_target_a);
     target_b = CarLineFollow_ApplyCorrectionB(g_target_b);
+#else
+    target_a = g_target_a;
+    target_b = g_target_b;
+#endif
 
     g_output_a = CarPid_UpdateIncremental(&g_pid_a, target_a, g_feedback_a);
 
+#if CAR_LINE_FOLLOW_ENABLED
     if (CarLineFollow_IsRightTurning() != 0U) {
         g_output_b = 0;
         CarPid_Reset(&g_pid_b);
@@ -178,6 +212,10 @@ void CarChassis_Service50ms(void)
         g_output_b = CarPid_UpdateIncremental(&g_pid_b, target_b, g_feedback_b);
         CarChassis_SetMotorB((int16_t)g_output_b);
     }
+#else
+    g_output_b = CarPid_UpdateIncremental(&g_pid_b, target_b, g_feedback_b);
+    CarChassis_SetMotorB((int16_t)g_output_b);
+#endif
 
     CarChassis_SetMotorA((int16_t)g_output_a);
     g_speed_updated = 1U;
