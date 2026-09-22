@@ -43,6 +43,14 @@ X42S 闭环步进电机 ──► 云台 / 钢球平衡执行机构
 
 详细实物证据见 [已验证接线与联调日志](docs/verified_wiring_and_bringup_log.md)。
 
+## 可审阅成果
+
+- H 题钢球平衡闭环整体技术方案（2026-08-01）：[PDF 预览](docs/portfolio/h_balance_closed_loop_technical_report_20260801.pdf) / [可编辑 DOCX](docs/portfolio/h_balance_closed_loop_technical_report_20260801.docx)。包含系统架构、通信、状态机、控制策略、异常处理与一次实物记录。该文档是阶段性技术报告，文中的 H3 参数与路径不代表当前主线配置。
+- [发车前馈试验与回退决策记录](docs/portfolio/h_balance_launch_feedforward_rollback_20260802.md)：展示如何约束试验范围、保留稳定基线并区分仿真结论与实物结论。
+- [串口 CSV 分析工具](tools/analysis/analyze_ball_runs.py)：从实测日志计算有效帧率、误差分布、帧间隔与持续越界事件，便于复现实验判断。
+
+以上材料均已移除个人身份、账号、本机用户目录和旧电脑绝对路径；历史材料保留日期与适用边界，避免被误认为当前代码验收结果。
+
 ## 快速开始
 
 ### 运行 host 测试
